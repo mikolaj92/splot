@@ -1,0 +1,73 @@
+version: 1
+id: employment_contract_composer
+mode: compose
+language: pl
+
+objective:
+  id: final_contract_quality
+  description: Compose a coherent final artifact from multiple candidate sections.
+
+composition:
+  unit: section
+  sections:
+    - id: intro
+      required: true
+    - id: scope
+      required: true
+    - id: compensation
+      required: true
+    - id: ip
+      required: true
+    - id: termination
+      required: true
+
+signals:
+  - id: goal_fit
+    provider: candidate.value
+    field: goal_fit
+    weight: 0.35
+    prefer: higher
+  - id: completeness
+    provider: candidate.value
+    field: completeness
+    weight: 0.25
+    prefer: higher
+  - id: legal_risk
+    provider: candidate.value
+    field: legal_risk
+    weight: 0.25
+    prefer: lower
+  - id: style_consistency
+    provider: candidate.value
+    field: style_consistency
+    weight: 0.15
+    prefer: higher
+
+constraints:
+  - id: no_contradictions
+    provider: candidate.flag
+    field: no_contradictions
+    severity: block
+    reason: candidate contradicts another selected part
+  - id: required_definitions_present
+    provider: candidate.flag
+    field: required_definitions_present
+    severity: human_decision
+    reason: definitions require human confirmation
+  - id: jurisdiction_compatible
+    provider: candidate.flag
+    field: jurisdiction_compatible
+    severity: block
+    reason: candidate is incompatible with required jurisdiction
+
+decision:
+  policy: section_by_section_composition
+
+postprocess:
+  - provider: postprocess.identity
+
+explain:
+  include_section_sources: true
+  include_warnings: true
+  include_human_decisions: true
+

@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from .models import SplotState, Candidate, Observation
+
+
+Provider = Callable[["FunctionContext"], Any]
+
+
+@dataclass
+class FunctionContext:
+    profile: dict[str, Any]
+    observations: list[Observation]
+    candidates: list[Candidate]
+    candidate: Candidate | None
+    state: SplotState
+    now: str
+    config: dict[str, Any]
+    report: dict[str, Any] | None = None
+
+
+class FunctionRegistry:
+    """Explicit allowlist for profile-referenced functions."""
+
+    def __init__(self) -> None:
+        self._functions: dict[str, Provider] = {}
+        self._categories: dict[str, str] = {}
+
+    def register(self, name: str, function: Provider, category: str = "generic") -> None:
+        if not name or not isinstance(name, str):
+            raise ValueError("registered function name must be a non-empty string")
+        self._functions[name] = function
+        self._categories[name] = category
+
+    def has(self, name: str) -> bool:
+        return name in self._functions
+
+    def get(self, name: str) -> Provider:
+        try:
+            return self._functions[name]
+        except KeyError as exc:
+            raise KeyError(f"function is not registered: {name}") from exc
+
+    def call(self, name: str, context: FunctionContext) -> Any:
+        return self.get(name)(context)
+
+    def names(self) -> list[str]:
+        return sorted(self._functions)
+
+
+def _candidate_value(context: FunctionContext) -> Any:
+    candidate = _require_candidate(context)
+    field = context.config.get("field") or context.config.get("id")
+    if field in candidate.payload:
+        return candidate.payload[field]
+    if field in candidate.metadata:
+        return candidate.metadata[field]
+    return context.config.get("default", 0)
+
+
+def _candidate_flag(context: FunctionContext) -> bool:
+    candidate = _require_candidate(context)
+    field = context.config.get("field") or context.config.get("id")
+    default = bool(context.config.get("default", True))
+    return bool(candidate.payload.get(field, candidate.metadata.get(field, default)))
+
+
+def _candidate_available(context: FunctionContext) -> bool:
+    candidate = _require_candidate(context)
+    return bool(candidate.payload.get("available", candidate.metadata.get("available", True)))
+
+
+def _observation_value(context: FunctionContext) -> Any:
+    field = context.config.get("field") or context.config.get("id")
+    candidate = context.candidate
+    candidate_sources = set(candidate.source_ids) if candidate else set()
+    for observation in reversed(context.observations):
+        source_match = not candidate_sources or observation.wave_id in candidate_sources
+        if source_match and field in observation.values:
+            return observation.values[field]
+    return context.config.get("default", 0)
+
+
+def _state_is_current(context: FunctionContext) -> float:
+    candidate = _require_candidate(context)
+    previous = context.state.previous_decision or {}
+    return 1.0 if previous.get("selected_candidate_id") == candidate.id else 0.0
+
+
+def _always_pass(_: FunctionContext) -> bool:
+    return True
+
+
+def _identity_postprocess(context: FunctionContext) -> Any:
+    return context.report
+
+
+def _require_candidate(context: FunctionContext) -> Candidate:
+    if context.candidate is None:
+        raise ValueError("provider requires a candidate")
+    return context.candidate
+
+
+def builtin_registry() -> FunctionRegistry:
+    registry = FunctionRegistry()
+    registry.register("candidate.value", _candidate_value, "signal_provider")
+    registry.register("candidate.flag", _candidate_flag, "constraint_predicate")
+    registry.register("candidate.available", _candidate_available, "constraint_predicate")
+    registry.register("observation.value", _observation_value, "signal_provider")
+    registry.register("state.is_current", _state_is_current, "signal_provider")
+    registry.register("always.pass", _always_pass, "constraint_predicate")
+    registry.register("postprocess.identity", _identity_postprocess, "postprocessor")
+    return registry
+

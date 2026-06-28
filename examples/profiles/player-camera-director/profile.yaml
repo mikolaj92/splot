@@ -1,0 +1,85 @@
+version: 1
+id: player_camera_director
+mode: select_one
+language: pl
+
+objective:
+  id: best_player_view
+  description: Select the source that best represents the current target.
+
+waves:
+  - id: camera_1
+    kind: video
+    reliability: 0.95
+  - id: camera_2
+    kind: video
+    reliability: 0.93
+  - id: camera_3
+    kind: video
+    reliability: 0.91
+
+candidate:
+  kind: source_view
+
+signals:
+  - id: visibility
+    provider: candidate.value
+    field: visibility
+    weight: 0.35
+    prefer: higher
+    min: 0.60
+  - id: face_angle
+    provider: candidate.value
+    field: face_angle
+    weight: 0.20
+    prefer: higher
+  - id: sharpness
+    provider: candidate.value
+    field: sharpness
+    weight: 0.15
+    prefer: higher
+  - id: occlusion
+    provider: candidate.value
+    field: occlusion
+    weight: 0.20
+    prefer: lower
+  - id: current_candidate_bonus
+    provider: state.is_current
+    weight: 0.10
+    prefer: higher
+
+constraints:
+  - id: source_must_be_live
+    provider: candidate.available
+    severity: block
+    reason: source is not live
+  - id: player_must_be_visible
+    signal: visibility
+    operator: gte
+    value: 0.60
+    severity: block
+
+decision:
+  policy: constrained_weighted_score
+  tie_breaker: keep_current
+  close_margin: 0.05
+
+stability:
+  policy: hysteresis
+  min_improvement: 0.15
+  min_hold_ms: 1200
+  cooldown_ms: 2500
+  prefer_current_when_close: true
+
+uncertainty:
+  when_close: keep_previous
+  when_conflicting: request_more_evidence
+  when_no_candidate: fallback
+  when_constraints_block_all: fallback
+
+explain:
+  include_scores: true
+  include_rejected_candidates: true
+  include_constraints: true
+  include_stability: true
+

@@ -1,0 +1,39 @@
+version: 1
+id: route_selector
+mode: route
+language: en
+
+objective:
+  id: best_processing_route
+  description: Route a work item to the best matching processing path.
+
+signals:
+  - id: route_fit
+    provider: candidate.value
+    field: route_fit
+    weight: 0.70
+    prefer: higher
+  - id: route_cost
+    provider: candidate.value
+    field: route_cost
+    weight: 0.30
+    prefer: lower
+
+constraints:
+  - id: route_available
+    provider: candidate.available
+    severity: block
+    reason: route unavailable
+
+decision:
+  policy: route_by_best_match
+  close_margin: 0.04
+
+stability:
+  policy: none
+
+uncertainty:
+  when_close: human_decision
+  when_no_candidate: fallback
+  when_constraints_block_all: fallback
+
