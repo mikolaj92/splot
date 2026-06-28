@@ -73,6 +73,7 @@ Implemented:
   belief snapshots, reports, feedback, and state
 - folder profile loading with Markdown sidecars
 - safe function registry with categories for signals, constraints, evidence,
+  observation providers, candidate providers, scorers, decision renderers,
   postprocessors, and feedback handlers
 - evidence generation from signal evaluations or registered evidence builders
 - belief snapshots with candidate support/opposition, uncertainty, conflicts,

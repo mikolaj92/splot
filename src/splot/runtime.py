@@ -51,7 +51,13 @@ def run_round(
     state.objective_id = loaded_profile.objective_id
     feedback = apply_feedback_handlers(loaded_profile.raw, feedback, state, registry, now_text)
     observation_models = [_observation(item) for item in observations or []]
+    observation_models.extend(_load_observations_from_providers(loaded_profile.raw, state, registry, now_text))
     candidate_models = [_candidate(item) for item in candidates or []]
+    candidate_models.extend(
+        _load_candidates_from_providers(
+            loaded_profile.raw, observation_models, state, registry, now_text
+        )
+    )
     if not candidate_models:
         candidate_models = _load_candidates_from_provider(
             loaded_profile.raw, observation_models, state, registry, now_text
@@ -116,6 +122,15 @@ def run_round(
                 loaded_profile.raw, candidate_models, evaluations, state, proposed, now_text
             )
 
+    _apply_decision_renderer(
+        loaded_profile.raw,
+        decision,
+        observation_models,
+        candidate_models,
+        state,
+        registry,
+        now_text,
+    )
     updated_state = update_state(
         state,
         decision,
@@ -141,6 +156,89 @@ def run_round(
     )
     report = apply_report_postprocessors(loaded_profile.raw, report, updated_state, registry, now_text)
     return RoundResult(decision=decision, state=updated_state, report=report)
+
+
+def _load_observations_from_providers(
+    profile: dict[str, Any],
+    state: SplotState,
+    registry: FunctionRegistry,
+    now: str,
+) -> list[Observation]:
+    observations: list[Observation] = []
+    for config in profile.get("observation_providers") or []:
+        provider = config.get("provider")
+        if not provider:
+            continue
+        context = FunctionContext(
+            profile=profile,
+            observations=[],
+            candidates=[],
+            candidate=None,
+            state=state,
+            now=now,
+            config=config,
+        )
+        observations.extend(_observation(item) for item in registry.call(provider, context) or [])
+    return observations
+
+
+def _load_candidates_from_providers(
+    profile: dict[str, Any],
+    observations: list[Observation],
+    state: SplotState,
+    registry: FunctionRegistry,
+    now: str,
+) -> list[Candidate]:
+    candidates: list[Candidate] = []
+    for config in profile.get("candidate_providers") or []:
+        provider = config.get("provider")
+        if not provider:
+            continue
+        context = FunctionContext(
+            profile=profile,
+            observations=observations,
+            candidates=[],
+            candidate=None,
+            state=state,
+            now=now,
+            config=config,
+        )
+        candidates.extend(_candidate(item) for item in registry.call(provider, context) or [])
+    return candidates
+
+
+def _apply_decision_renderer(
+    profile: dict[str, Any],
+    decision: Decision,
+    observations: list[Observation],
+    candidates: list[Candidate],
+    state: SplotState,
+    registry: FunctionRegistry,
+    now: str,
+) -> None:
+    config = profile.get("decision_renderer") or {}
+    provider = config.get("provider") or (profile.get("decision") or {}).get("renderer")
+    if not provider:
+        return
+    context = FunctionContext(
+        profile=profile,
+        observations=observations,
+        candidates=candidates,
+        candidate=None,
+        state=state,
+        now=now,
+        config=config,
+        report=decision.to_dict(),
+    )
+    rendered = registry.call(provider, context)
+    if not isinstance(rendered, dict):
+        return
+    if "action" in rendered:
+        decision.action = rendered["action"]
+    if "explanation" in rendered:
+        decision.explanation = str(rendered["explanation"])
+    if "metadata" in rendered and isinstance(rendered["metadata"], dict):
+        decision.metadata.update(rendered["metadata"])
 
 
 def _build_report(

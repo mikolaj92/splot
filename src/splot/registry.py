@@ -89,6 +89,25 @@ def _observation_value(context: FunctionContext) -> Any:
     return context.config.get("default", 0)
 
 
+def _observations_static(context: FunctionContext) -> list[dict[str, Any]]:
+    return list(context.config.get("items") or [])
+
+
+def _candidates_static(context: FunctionContext) -> list[dict[str, Any]]:
+    return list(context.config.get("items") or [])
+
+
+def _candidates_from_observation_values(context: FunctionContext) -> list[dict[str, Any]]:
+    field = context.config.get("field", "candidates")
+    candidates: list[dict[str, Any]] = []
+    for observation in context.observations:
+        values = observation.values.get(field) or []
+        if isinstance(values, dict):
+            values = [values]
+        candidates.extend(values)
+    return candidates
+
+
 def _state_is_current(context: FunctionContext) -> float:
     candidate = _require_candidate(context)
     previous = context.state.previous_decision or {}
@@ -101,6 +120,30 @@ def _always_pass(_: FunctionContext) -> bool:
 
 def _identity_postprocess(context: FunctionContext) -> Any:
     return context.report
+
+
+def _weighted_scorer(context: FunctionContext) -> dict[str, Any]:
+    signals = (context.report or {}).get("signals") or []
+    total_weight = sum(float(signal.get("weight", 0.0)) for signal in signals)
+    score = (
+        sum(float(signal.get("contribution", 0.0)) for signal in signals) / total_weight
+        if total_weight
+        else 0.0
+    )
+    return {"score": score, "reason": "weighted signal score"}
+
+
+def _decision_summary_renderer(context: FunctionContext) -> dict[str, Any]:
+    decision = dict(context.report or {})
+    selected = decision.get("selected_candidate_id") or decision.get("selected_candidate_ids")
+    return {
+        "action": {
+            "type": "summary",
+            "status": decision.get("status"),
+            "selected": selected,
+        },
+        "explanation": f"{decision.get('status')} selected={selected}",
+    }
 
 
 def _payload_evidence(context: FunctionContext) -> list[dict[str, Any]]:
@@ -153,10 +196,19 @@ def builtin_registry() -> FunctionRegistry:
     registry.register("candidate.value", _candidate_value, "signal_provider")
     registry.register("candidate.flag", _candidate_flag, "constraint_predicate")
     registry.register("candidate.available", _candidate_available, "constraint_predicate")
+    registry.register("candidates.static", _candidates_static, "candidate_provider")
+    registry.register(
+        "candidates.from_observation_values",
+        _candidates_from_observation_values,
+        "candidate_provider",
+    )
     registry.register("observation.value", _observation_value, "signal_provider")
+    registry.register("observations.static", _observations_static, "observation_provider")
     registry.register("state.is_current", _state_is_current, "signal_provider")
     registry.register("always.pass", _always_pass, "constraint_predicate")
     registry.register("evidence.payload", _payload_evidence, "evidence_builder")
+    registry.register("score.weighted", _weighted_scorer, "scorer")
+    registry.register("decision.render_summary", _decision_summary_renderer, "decision_renderer")
     registry.register("postprocess.identity", _identity_postprocess, "postprocessor")
     registry.register(
         "feedback.acceptance_reliability",

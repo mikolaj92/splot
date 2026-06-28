@@ -38,8 +38,7 @@ def evaluate_candidate(
     )
     verifiers = apply_verifiers(profile, observations, candidates, candidate, state, registry, now)
 
-    total_weight = sum(signal.weight for signal in signals)
-    raw_score = sum(signal.contribution for signal in signals) / total_weight if total_weight else 0.0
+    raw_score = _score_candidate(profile, observations, candidates, candidate, state, registry, now, signals)
     penalty = sum(result.penalty for result in constraints if not result.passed)
     score = max(0.0, min(1.0, raw_score - penalty))
 
@@ -75,9 +74,41 @@ def evaluate_candidate(
     )
 
 
+def _score_candidate(
+    profile: dict[str, Any],
+    observations: list[Observation],
+    candidates: list[Candidate],
+    candidate: Candidate,
+    state: SplotState,
+    registry: FunctionRegistry,
+    now: str,
+    signals: list[Any],
+) -> float:
+    scoring = profile.get("scoring") or {}
+    provider = scoring.get("provider")
+    if provider:
+        from .registry import FunctionContext
+
+        context = FunctionContext(
+            profile=profile,
+            observations=observations,
+            candidates=candidates,
+            candidate=candidate,
+            state=state,
+            now=now,
+            config=scoring,
+            report={"signals": [signal.to_dict() for signal in signals]},
+        )
+        provided = registry.call(provider, context)
+        if isinstance(provided, dict):
+            return max(0.0, min(1.0, float(provided.get("score", 0.0))))
+        return max(0.0, min(1.0, float(provided)))
+    total_weight = sum(signal.weight for signal in signals)
+    return sum(signal.contribution for signal in signals) / total_weight if total_weight else 0.0
+
+
 def evaluation_for(evaluations: list[CandidateEvaluation], candidate_id: str | None) -> CandidateEvaluation | None:
     for evaluation in evaluations:
         if evaluation.candidate_id == candidate_id:
             return evaluation
     return None
-

@@ -98,6 +98,24 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     if profile.mode in {"select_one", "route", "regulate", "compose"} and signals and total_weight <= 0:
         raise ProfileError("at least one signal weight must be positive")
 
+    for provider_config in data.get("observation_providers") or []:
+        provider = provider_config.get("provider") if isinstance(provider_config, dict) else None
+        if not provider:
+            raise ProfileError("each observation provider needs a provider")
+        if registry is not None and not registry.has(provider):
+            raise ProfileError(f"unregistered observation provider: {provider}")
+
+    for provider_config in data.get("candidate_providers") or []:
+        provider = provider_config.get("provider") if isinstance(provider_config, dict) else None
+        if not provider:
+            raise ProfileError("each candidate provider needs a provider")
+        if registry is not None and not registry.has(provider):
+            raise ProfileError(f"unregistered candidate provider: {provider}")
+
+    candidate_config = data.get("candidate") or {}
+    if candidate_config.get("provider") and registry is not None and not registry.has(candidate_config["provider"]):
+        raise ProfileError(f"unregistered candidate provider: {candidate_config['provider']}")
+
     for constraint in data.get("constraints") or []:
         if not isinstance(constraint, dict) or not constraint.get("id"):
             raise ProfileError("each constraint needs an id")
@@ -145,6 +163,16 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     }
     if policy not in known_policies:
         raise ProfileError(f"unsupported decision policy: {policy}")
+    if decision.get("renderer") and registry is not None and not registry.has(decision["renderer"]):
+        raise ProfileError(f"unregistered decision renderer: {decision['renderer']}")
+
+    scoring = data.get("scoring") or {}
+    if scoring.get("provider") and registry is not None and not registry.has(scoring["provider"]):
+        raise ProfileError(f"unregistered scorer: {scoring['provider']}")
+
+    decision_renderer = data.get("decision_renderer") or {}
+    if decision_renderer.get("provider") and registry is not None and not registry.has(decision_renderer["provider"]):
+        raise ProfileError(f"unregistered decision renderer: {decision_renderer['provider']}")
 
     stability = data.get("stability") or {}
     stability_policy = stability.get("policy", "none")

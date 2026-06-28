@@ -19,11 +19,16 @@ Required fields:
 Common sections:
 
 - `waves`
+- `observation_providers`
+- `candidate_providers`
+- `candidate.provider`
 - `signals`
+- `scoring`
 - `constraints`
 - `verifiers`
 - `evidence` or `evidence_builders`
 - `decision`
+- `decision.renderer` or `decision_renderer.provider`
 - `stability`
 - `uncertainty`
 - `feedback_handlers`
@@ -38,10 +43,15 @@ Built-in provider names:
 - `candidate.value`
 - `candidate.flag`
 - `candidate.available`
+- `candidates.static`
+- `candidates.from_observation_values`
 - `observation.value`
+- `observations.static`
 - `state.is_current`
 - `always.pass`
 - `evidence.payload`
+- `score.weighted`
+- `decision.render_summary`
 - `postprocess.identity`
 - `feedback.acceptance_reliability`
 
