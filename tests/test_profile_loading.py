@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from splot import ProfileError, builtin_registry, load_profile, validate_profile
+from splot import ProfileError, builtin_registry, diagnose_profile, load_profile, validate_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +82,30 @@ signals:
 
             self.assertEqual(profile.raw["signals"][0]["id"], "score")
             self.assertIn("objective.md", profile.sidecars)
+
+    def test_diagnose_profile_reports_file_and_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / "profile.yaml").write_text(
+                """
+version: 1
+id: bad
+mode: select_one
+objective:
+  id: objective
+signals:
+  - id: score
+    provider: missing.provider
+    weight: 1
+""",
+                encoding="utf-8",
+            )
+
+            diagnostics = diagnose_profile(path, registry=builtin_registry())
+
+            self.assertEqual(len(diagnostics), 1)
+            self.assertIn("missing.provider", diagnostics[0].message)
+            self.assertEqual(diagnostics[0].line, 9)
 
 
 if __name__ == "__main__":

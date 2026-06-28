@@ -4,6 +4,8 @@
 
 ```bash
 PYTHONPATH=src python -m splot.cli examples run camera --out decision_report.json
+PYTHONPATH=src python -m splot.cli audit-report decision_report.json
+PYTHONPATH=src python -m splot.cli replay-round --profile examples/profiles/player-camera-director --report decision_report.json --compare
 ```
 
 Demonstrates weighted scoring, blocking constraints, current-candidate bonus,

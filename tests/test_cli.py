@@ -25,6 +25,12 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("valid profile", result.stdout)
 
+    def test_profile_diagnose_command(self):
+        result = self.run_cli("profile", "diagnose", "examples/profiles/player-camera-director")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("valid profile", result.stdout)
+
     def test_decide_writes_report_and_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "report.json"
@@ -72,11 +78,14 @@ class CliTests(unittest.TestCase):
                 str(out),
                 "--out",
                 str(replayed),
+                "--compare",
             )
+            audit = self.run_cli("audit-report", str(out))
 
             self.assertEqual(inspect.returncode, 0, inspect.stderr)
             self.assertEqual(explain.returncode, 0, explain.stderr)
             self.assertEqual(replay.returncode, 0, replay.stderr)
+            self.assertEqual(audit.returncode, 0, audit.stderr)
             self.assertTrue(replayed.exists())
 
     def test_state_init_command(self):

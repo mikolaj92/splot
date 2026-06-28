@@ -6,8 +6,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .audit import audit_report, compare_replay
 from .models import SplotState
-from .profile import ProfileError, load_profile, validate_profile
+from .profile import ProfileError, diagnose_profile, load_profile, validate_profile
 from .registry import builtin_registry
 from .runtime import run_round
 from .state import load_state_file, write_state_file
@@ -24,6 +25,8 @@ def main(argv: list[str] | None = None) -> int:
     profile_subcommands = profile_parser.add_subparsers(dest="profile_command", required=True)
     validate_parser = profile_subcommands.add_parser("validate")
     validate_parser.add_argument("path")
+    diagnose_parser = profile_subcommands.add_parser("diagnose")
+    diagnose_parser.add_argument("path")
 
     decide_parser = subcommands.add_parser("decide")
     decide_parser.add_argument("--profile", required=True)
@@ -41,6 +44,10 @@ def main(argv: list[str] | None = None) -> int:
     replay_parser.add_argument("--profile", required=True)
     replay_parser.add_argument("--report", required=True)
     replay_parser.add_argument("--out")
+    replay_parser.add_argument("--compare", action="store_true")
+
+    audit_parser = subcommands.add_parser("audit-report")
+    audit_parser.add_argument("report")
 
     state_parser = subcommands.add_parser("state")
     state_subcommands = state_parser.add_subparsers(dest="state_command", required=True)
@@ -65,6 +72,8 @@ def main(argv: list[str] | None = None) -> int:
             return _explain(args)
         if args.command == "replay-round":
             return _replay(args)
+        if args.command == "audit-report":
+            return _audit(args)
         if args.command == "state":
             return _state(args)
         if args.command == "examples":
@@ -76,6 +85,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _profile(args: argparse.Namespace) -> int:
+    if args.profile_command == "diagnose":
+        diagnostics = diagnose_profile(args.path, registry=builtin_registry())
+        if not diagnostics:
+            print(f"valid profile: {load_profile(args.path).id}")
+            return 0
+        for diagnostic in diagnostics:
+            print(diagnostic.format(), file=sys.stderr)
+        return 1
     profile = load_profile(args.path)
     validate_profile(profile, registry=builtin_registry())
     print(f"valid profile: {profile.id} ({profile.mode})")
@@ -152,7 +169,24 @@ def _replay(args: argparse.Namespace) -> int:
     if args.out:
         Path(args.out).write_text(json.dumps(output, indent=2, sort_keys=True), encoding="utf-8")
     _print_summary(result.decision.to_dict())
+    if args.compare:
+        findings = compare_replay(report, output)
+        for finding in findings:
+            print(finding.format(), file=sys.stderr)
+        return 1 if any(finding.severity == "error" for finding in findings) else 0
     return 0
+
+
+def _audit(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    findings = audit_report(report)
+    if not findings:
+        print("report ok")
+        return 0
+    for finding in findings:
+        stream = sys.stderr if finding.severity == "error" else sys.stdout
+        print(finding.format(), file=stream)
+    return 1 if any(finding.severity == "error" for finding in findings) else 0
 
 
 def _example(args: argparse.Namespace) -> int:

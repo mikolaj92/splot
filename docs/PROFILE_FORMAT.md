@@ -64,3 +64,12 @@ Important validation rules:
 - constraint operators and severities are allowlisted
 - composition sections must have unique IDs
 - composition compatibility rules must use `forbid_together` or `require_together`
+
+Use profile diagnostics when editing a profile:
+
+```bash
+PYTHONPATH=src python -m splot.cli profile diagnose examples/profiles/player-camera-director
+```
+
+`diagnose` prints file and line information for validation failures when the
+failing provider, policy, signal, or section can be located.

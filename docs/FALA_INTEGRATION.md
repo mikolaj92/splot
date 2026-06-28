@@ -35,5 +35,23 @@ The adapter returns:
 - `events`: currently `splot.round_completed`
 - `gates`: human-decision descriptors when required
 
-This file is still import-free. A real Fala host should translate those
-descriptors into actual artifacts, events, projections, and gates.
+## Process Runtime Step
+
+Splot also exposes a Fala process-runtime stdio entrypoint:
+
+```bash
+splot-fala-step
+```
+
+Use it from a Fala subprocess step. Put `profile` in process `config` or input
+values. Put `observations`, `candidates`, `state`, `feedback`, and `now` in
+input values or `initial` values. The step returns a Fala-compatible
+`ProcessOutput` dictionary and writes:
+
+- `splot_decision_report` artifact
+- `splot_state` artifact
+- `splot.decision_committed` event
+- `splot.human_decision_required` event when human input is needed
+
+The manifest-shaped adapter remains useful for non-Fala hosts that want the
+same descriptors without running a Fala process step.

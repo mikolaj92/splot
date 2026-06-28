@@ -12,6 +12,7 @@ dependencies = []
 
 [project.scripts]
 splot = "splot.cli:main"
+splot-fala-step = "splot.adapters.fala:run_stdio"
 
 [build-system]
 requires = ["setuptools>=68"]

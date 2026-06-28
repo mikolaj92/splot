@@ -29,6 +29,20 @@ class SplotProfile:
         return str(objective.get("id", self.id))
 
 
+@dataclass
+class ProfileDiagnostic:
+    message: str
+    path: Path | None = None
+    line: int | None = None
+    severity: str = "error"
+
+    def format(self) -> str:
+        location = str(self.path) if self.path else "<profile>"
+        if self.line is not None:
+            location = f"{location}:{self.line}"
+        return f"{location}: {self.severity}: {self.message}"
+
+
 def load_profile(path_or_data: str | Path | dict[str, Any] | SplotProfile) -> SplotProfile:
     if isinstance(path_or_data, SplotProfile):
         return path_or_data
@@ -54,6 +68,20 @@ def load_profile(path_or_data: str | Path | dict[str, Any] | SplotProfile) -> Sp
     profile = SplotProfile(raw=raw, path=profile_file.parent, sidecars=sidecars)
     validate_profile(profile)
     return profile
+
+
+def diagnose_profile(
+    path_or_data: str | Path | dict[str, Any] | SplotProfile,
+    registry: Any | None = None,
+) -> list[ProfileDiagnostic]:
+    try:
+        profile = load_profile(path_or_data)
+        validate_profile(profile, registry=registry)
+        return []
+    except ProfileError as exc:
+        path = _profile_file_for(path_or_data)
+        line = _line_for_message(path, str(exc)) if path else None
+        return [ProfileDiagnostic(message=str(exc), path=path, line=line)]
 
 
 def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None:
@@ -241,6 +269,61 @@ def _as_number(value: Any, label: str) -> float:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise ProfileError(f"{label} must be a number") from exc
+
+
+def _profile_file_for(path_or_data: Any) -> Path | None:
+    if isinstance(path_or_data, SplotProfile):
+        return path_or_data.path / "profile.yaml" if path_or_data.path else None
+    if isinstance(path_or_data, dict):
+        return None
+    path = Path(path_or_data)
+    return path / "profile.yaml" if path.is_dir() else path
+
+
+def _line_for_message(path: Path, message: str) -> int | None:
+    if not path.exists():
+        return None
+    lines = path.read_text(encoding="utf-8").splitlines()
+    needles = _needles_for_message(message)
+    for needle in needles:
+        for index, line in enumerate(lines, start=1):
+            if needle and needle in line:
+                return index
+    return 1
+
+
+def _needles_for_message(message: str) -> list[str]:
+    markers = [
+        "unregistered signal provider: ",
+        "unregistered constraint provider: ",
+        "unregistered verifier: ",
+        "unregistered evidence builder: ",
+        "unregistered observation provider: ",
+        "unregistered candidate provider: ",
+        "unregistered scorer: ",
+        "unregistered decision renderer: ",
+        "unregistered postprocessor: ",
+        "unregistered feedback handler: ",
+        "unsupported decision policy: ",
+        "unsupported stability policy: ",
+        "unsupported mode: ",
+        "constraint references unknown signal: ",
+        "invalid constraint severity: ",
+        "invalid constraint operator: ",
+        "invalid composition rule severity: ",
+    ]
+    for marker in markers:
+        if marker in message:
+            return [message.split(marker, 1)[1]]
+    if "missing required field: " in message:
+        return [message.split("missing required field: ", 1)[1]]
+    if "objective.id is required" in message:
+        return ["objective:"]
+    if "signals must be a list" in message:
+        return ["signals:"]
+    if "compose mode requires composition.sections" in message:
+        return ["composition:"]
+    return []
 
 
 def load_simple_yaml(text: str) -> Any:

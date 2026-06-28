@@ -1,7 +1,9 @@
 import unittest
+import os
+import tempfile
 from pathlib import Path
 
-from splot.adapters.fala import arbitration_step
+from splot.adapters.fala import arbitration_step, process_runtime_step
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,7 +37,50 @@ class FalaAdapterTests(unittest.TestCase):
         self.assertTrue(result["artifacts"])
         self.assertTrue(result["gates"])
 
+    def test_process_runtime_step_returns_fala_process_output(self):
+        old_artifact_dir = os.environ.get("PROCESS_RUNTIME_ARTIFACT_DIR")
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["PROCESS_RUNTIME_ARTIFACT_DIR"] = tmp
+            result = process_runtime_step(
+                {
+                    "pipeline_id": "pipeline",
+                    "run_id": "run",
+                    "document_id": "doc",
+                    "process_id": "splot_step",
+                    "attempt": 1,
+                    "config": {"profile": str(ROOT / "examples/profiles/player-camera-director")},
+                    "input": {
+                        "values": {
+                            "initial": {
+                                "now": "2026-06-28T12:00:00+00:00",
+                                "candidates": [
+                                    {
+                                        "id": "camera_1",
+                                        "payload": {
+                                            "visibility": 0.8,
+                                            "face_angle": 0.8,
+                                            "sharpness": 0.8,
+                                            "occlusion": 0.1,
+                                            "available": True,
+                                        },
+                                    }
+                                ],
+                            }
+                        },
+                        "artifacts": [],
+                    },
+                }
+            )
+        if old_artifact_dir is None:
+            os.environ.pop("PROCESS_RUNTIME_ARTIFACT_DIR", None)
+        else:
+            os.environ["PROCESS_RUNTIME_ARTIFACT_DIR"] = old_artifact_dir
+
+        self.assertIn("values", result)
+        self.assertIn("artifacts", result)
+        self.assertEqual(result["values"]["decision"]["status"], "selected")
+        self.assertEqual(result["artifacts"][0]["kind"], "splot_decision_report")
+
 
 if __name__ == "__main__":
     unittest.main()
-
