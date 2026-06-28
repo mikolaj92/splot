@@ -81,12 +81,50 @@ class CliTests(unittest.TestCase):
                 "--compare",
             )
             audit = self.run_cli("audit-report", str(out))
+            validate = self.run_cli("report", "validate", str(out))
+            compare = self.run_cli("compare-reports", str(out), str(out))
+            weights = self.run_cli("explain-weights", str(out))
 
             self.assertEqual(inspect.returncode, 0, inspect.stderr)
             self.assertEqual(explain.returncode, 0, explain.stderr)
             self.assertEqual(replay.returncode, 0, replay.stderr)
             self.assertEqual(audit.returncode, 0, audit.stderr)
+            self.assertEqual(validate.returncode, 0, validate.stderr)
+            self.assertEqual(compare.returncode, 0, compare.stderr)
+            self.assertEqual(weights.returncode, 0, weights.stderr)
             self.assertTrue(replayed.exists())
+
+    def test_export_html_sensitivity_and_redact_commands(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "report.json"
+            html = Path(tmp) / "report.html"
+            redacted = Path(tmp) / "redacted.json"
+            decide = self.run_cli(
+                "decide",
+                "--profile",
+                "examples/profiles/player-camera-director",
+                "--input",
+                "examples/inputs/camera_round_1.json",
+                "--out",
+                str(out),
+            )
+            self.assertEqual(decide.returncode, 0, decide.stderr)
+
+            export = self.run_cli("export-html", str(out), "--out", str(html), "--redact")
+            sensitivity = self.run_cli(
+                "sensitivity",
+                "--profile",
+                "examples/profiles/player-camera-director",
+                "--input",
+                "examples/inputs/camera_round_1.json",
+            )
+            redact = self.run_cli("redact-report", str(out), "--out", str(redacted), "--field", "decision.explanation")
+
+            self.assertEqual(export.returncode, 0, export.stderr)
+            self.assertEqual(sensitivity.returncode, 0, sensitivity.stderr)
+            self.assertEqual(redact.returncode, 0, redact.stderr)
+            self.assertIn("Splot Decision Report", html.read_text(encoding="utf-8"))
+            self.assertEqual(json.loads(redacted.read_text(encoding="utf-8"))["decision"]["explanation"], "[REDACTED]")
 
     def test_state_init_command(self):
         with tempfile.TemporaryDirectory() as tmp:

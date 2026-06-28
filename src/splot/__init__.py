@@ -1,6 +1,17 @@
 """Splot's generic information arbitration runtime."""
 
-from .audit import ReportAuditFinding, audit_report, compare_replay
+from .audit import ReportAuditFinding, audit_report, compare_replay, compare_reports
+from .errors import (
+    SplotCompositionError,
+    SplotError,
+    SplotPolicyError,
+    SplotProfileError,
+    SplotProviderError,
+    SplotRegistryError,
+    SplotReportError,
+    SplotStabilityError,
+    SplotValidationError,
+)
 from .models import (
     SplotState,
     Candidate,
@@ -25,7 +36,14 @@ from .profile import (
 )
 from .registry import FunctionContext, FunctionRegistry, builtin_registry
 from .runtime import RoundResult, run_round
+from .schemas import (
+    SchemaValidationError,
+    validate_decision_report_data,
+    validate_profile_data,
+    validate_state_data,
+)
 from .storage import JsonFileStateStore, MemoryStateStore, StateStore
+from .versioning import SPLOT_VERSION
 
 __all__ = [
     "SplotProfile",
@@ -45,7 +63,18 @@ __all__ = [
     "ProfileError",
     "ReportAuditFinding",
     "RoundResult",
+    "SPLOT_VERSION",
+    "SchemaValidationError",
     "Signal",
+    "SplotCompositionError",
+    "SplotError",
+    "SplotPolicyError",
+    "SplotProfileError",
+    "SplotProviderError",
+    "SplotRegistryError",
+    "SplotReportError",
+    "SplotStabilityError",
+    "SplotValidationError",
     "StateStore",
     "Wave",
     "builtin_registry",
@@ -53,8 +82,12 @@ __all__ = [
     "build_evidence",
     "audit_report",
     "compare_replay",
+    "compare_reports",
     "diagnose_profile",
     "load_profile",
     "run_round",
+    "validate_decision_report_data",
     "validate_profile",
+    "validate_profile_data",
+    "validate_state_data",
 ]

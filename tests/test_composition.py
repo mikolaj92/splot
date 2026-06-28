@@ -58,7 +58,11 @@ class CompositionTests(unittest.TestCase):
         plan = result.decision.action["plan"]
         self.assertEqual(result.decision.status, "needs_human_decision")
         self.assertEqual(plan["selected_by_section"]["intro"], "intro_a")
+        self.assertEqual(plan["selected_candidate_by_slot"]["intro"], "intro_a")
         self.assertIn("ip", plan["missing_required"])
+        self.assertIn("ip", plan["missing_required_slots"])
+        self.assertIn("compensation", plan["human_decisions_by_slot"])
+        self.assertEqual(plan["composed_payload_schema_version"], 1)
         self.assertTrue(result.decision.required_human_inputs)
 
 

@@ -21,6 +21,8 @@ def decide_composition(
     human_decisions: list[str] = []
     rejected: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
+    blocked_by_slot: dict[str, list[dict[str, Any]]] = {}
+    human_by_slot: dict[str, list[str]] = {}
 
     for section in sections:
         section_id = str(section["id"])
@@ -32,7 +34,11 @@ def decide_composition(
         eligible = [evaluation for evaluation in section_candidates if evaluation.eligible]
         for evaluation in section_candidates:
             if evaluation.rejected_reasons:
-                rejected.append({"candidate_id": evaluation.candidate_id, "reasons": evaluation.rejected_reasons})
+                blocked = {"candidate_id": evaluation.candidate_id, "reasons": evaluation.rejected_reasons}
+                rejected.append(blocked)
+                blocked_by_slot.setdefault(section_id, []).append(blocked)
+            if evaluation.human_decisions:
+                human_by_slot.setdefault(section_id, []).extend(evaluation.human_decisions)
         if not eligible:
             if section.get("required", False):
                 missing_required.append(section_id)
@@ -54,17 +60,20 @@ def decide_composition(
                     "kind": "missing_dependency",
                     "candidate_id": candidate.id,
                     "missing": missing_dependencies,
+                    "scope": "dependency",
                 }
             )
 
     for rule in (profile.get("composition") or {}).get("compatibility") or []:
         conflict = _evaluate_compatibility_rule(rule, selected_set)
         if conflict:
+            conflict["scope"] = "compatibility"
             conflicts.append(conflict)
 
     for rule in (profile.get("composition") or {}).get("global_constraints") or []:
         conflict = _evaluate_compatibility_rule(rule, selected_set)
         if conflict:
+            conflict["scope"] = "global"
             conflicts.append(conflict)
 
     for conflict in conflicts:
@@ -80,7 +89,14 @@ def decide_composition(
     plan = {
         "unit": (profile.get("composition") or {}).get("unit", "section"),
         "selected_by_section": selected_by_section,
+        "selected_candidate_by_slot": selected_by_section,
         "missing_required": missing_required,
+        "missing_required_slots": missing_required,
+        "blocked_candidates_by_slot": blocked_by_slot,
+        "human_decisions_by_slot": human_by_slot,
+        "global_conflicts": [item for item in conflicts if item.get("scope") in {"global", "dependency"}],
+        "compatibility_explanations": conflicts,
+        "composed_payload_schema_version": 1,
         "composed_payload": _composed_payload(candidates, selected_by_section),
         "conflicts": conflicts,
     }

@@ -55,3 +55,7 @@ input values or `initial` values. The step returns a Fala-compatible
 
 The manifest-shaped adapter remains useful for non-Fala hosts that want the
 same descriptors without running a Fala process step.
+
+See `examples/fala-integration/` for a runnable stdin/stdout payload and a
+Fala-shaped package descriptor. The example is intentionally import-free: it
+does not require Fala to be installed.

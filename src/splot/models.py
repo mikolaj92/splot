@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 from uuid import uuid4
 
+from .versioning import STATE_SCHEMA_VERSION
+
 
 JsonDict = dict[str, Any]
 
@@ -198,6 +200,7 @@ class Feedback(JsonModel):
 
 @dataclass
 class SplotState(JsonModel):
+    state_schema_version: int = STATE_SCHEMA_VERSION
     session_id: str = field(default_factory=lambda: new_id("session"))
     objective_id: str | None = None
     previous_decision: JsonDict | None = None
@@ -216,6 +219,7 @@ class SplotState(JsonModel):
         if not data:
             return cls()
         return cls(
+            state_schema_version=int(data.get("state_schema_version", STATE_SCHEMA_VERSION)),
             session_id=data.get("session_id") or new_id("session"),
             objective_id=data.get("objective_id"),
             previous_decision=data.get("previous_decision"),
@@ -233,6 +237,12 @@ class SplotState(JsonModel):
 
 @dataclass
 class DecisionReport(JsonModel):
+    splot_version: str
+    profile_version: int
+    profile_digest: str
+    profile_schema_version: int
+    report_schema_version: int
+    input_digest: str
     round_id: str
     profile_id: str
     mode: str

@@ -4,11 +4,28 @@ version = "0.1.0"
 description = "Generic information arbitration runtime."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
   { name = "mikolaj92" }
 ]
 dependencies = []
+keywords = ["arbitration", "decision-support", "evidence", "runtime", "profiles"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/mikolaj92/splot"
+Repository = "https://github.com/mikolaj92/splot"
+Issues = "https://github.com/mikolaj92/splot/issues"
+Changelog = "https://github.com/mikolaj92/splot/blob/main/CHANGELOG.md"
 
 [project.scripts]
 splot = "splot.cli:main"

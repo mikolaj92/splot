@@ -1,0 +1,19 @@
+{
+  "profile": "examples/profiles/player-camera-director",
+  "observations": [],
+  "candidates": [
+    {
+      "id": "camera_1",
+      "source_ids": ["camera_1"],
+      "payload": {
+        "visibility": 0.9,
+        "face_angle": 0.7,
+        "sharpness": 0.8,
+        "occlusion": 0.1,
+        "available": true
+      }
+    }
+  ],
+  "state": {},
+  "now": "2026-06-28T12:00:00+00:00"
+}

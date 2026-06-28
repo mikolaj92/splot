@@ -6,11 +6,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .audit import audit_report, compare_replay
+from .audit import audit_report, compare_replay, compare_reports
+from .html_report import render_html_report
 from .models import SplotState
 from .profile import ProfileError, diagnose_profile, load_profile, validate_profile
+from .redaction import redact_value
 from .registry import builtin_registry
 from .runtime import run_round
+from .sensitivity import explain_weights, format_weight_explanation
+from .schemas import SchemaValidationError, validate_decision_report_data
 from .state import load_state_file, write_state_file
 
 
@@ -49,6 +53,33 @@ def main(argv: list[str] | None = None) -> int:
     audit_parser = subcommands.add_parser("audit-report")
     audit_parser.add_argument("report")
 
+    compare_parser = subcommands.add_parser("compare-reports")
+    compare_parser.add_argument("old")
+    compare_parser.add_argument("new")
+
+    html_parser = subcommands.add_parser("export-html")
+    html_parser.add_argument("report")
+    html_parser.add_argument("--out", required=True)
+    html_parser.add_argument("--redact", action="store_true")
+    html_parser.add_argument("--field", action="append", default=[])
+
+    weights_parser = subcommands.add_parser("explain-weights")
+    weights_parser.add_argument("report")
+
+    sensitivity_parser = subcommands.add_parser("sensitivity")
+    sensitivity_parser.add_argument("--profile", required=True)
+    sensitivity_parser.add_argument("--input", required=True)
+
+    redact_parser = subcommands.add_parser("redact-report")
+    redact_parser.add_argument("report")
+    redact_parser.add_argument("--out", required=True)
+    redact_parser.add_argument("--field", action="append", default=[])
+
+    report_parser = subcommands.add_parser("report")
+    report_subcommands = report_parser.add_subparsers(dest="report_command", required=True)
+    report_validate = report_subcommands.add_parser("validate")
+    report_validate.add_argument("report")
+
     state_parser = subcommands.add_parser("state")
     state_subcommands = state_parser.add_subparsers(dest="state_command", required=True)
     state_init = state_subcommands.add_parser("init")
@@ -74,11 +105,23 @@ def main(argv: list[str] | None = None) -> int:
             return _replay(args)
         if args.command == "audit-report":
             return _audit(args)
+        if args.command == "compare-reports":
+            return _compare_reports(args)
+        if args.command == "export-html":
+            return _export_html(args)
+        if args.command == "explain-weights":
+            return _explain_weights(args)
+        if args.command == "sensitivity":
+            return _sensitivity(args)
+        if args.command == "redact-report":
+            return _redact_report(args)
+        if args.command == "report":
+            return _report(args)
         if args.command == "state":
             return _state(args)
         if args.command == "examples":
             return _example(args)
-    except (ProfileError, KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+    except (ProfileError, SchemaValidationError, KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     return 0
@@ -92,7 +135,7 @@ def _profile(args: argparse.Namespace) -> int:
             return 0
         for diagnostic in diagnostics:
             print(diagnostic.format(), file=sys.stderr)
-        return 1
+        return 1 if any(item.severity == "error" for item in diagnostics) else 0
     profile = load_profile(args.path)
     validate_profile(profile, registry=builtin_registry())
     print(f"valid profile: {profile.id} ({profile.mode})")
@@ -187,6 +230,64 @@ def _audit(args: argparse.Namespace) -> int:
         stream = sys.stderr if finding.severity == "error" else sys.stdout
         print(finding.format(), file=stream)
     return 1 if any(finding.severity == "error" for finding in findings) else 0
+
+
+def _compare_reports(args: argparse.Namespace) -> int:
+    old = json.loads(Path(args.old).read_text(encoding="utf-8"))
+    new = json.loads(Path(args.new).read_text(encoding="utf-8"))
+    findings = compare_reports(old, new)
+    if not findings:
+        print("reports match on decision metadata")
+        return 0
+    for finding in findings:
+        print(finding.format())
+    return 0
+
+
+def _export_html(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    html = render_html_report(report, redact=args.redact, fields=args.field)
+    Path(args.out).write_text(html, encoding="utf-8")
+    print(f"wrote html report: {args.out}")
+    return 0
+
+
+def _explain_weights(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    print(format_weight_explanation(explain_weights(report)))
+    return 0
+
+
+def _sensitivity(args: argparse.Namespace) -> int:
+    payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    result = run_round(
+        profile=args.profile,
+        observations=payload.get("observations") or [],
+        candidates=payload.get("candidates") or [],
+        previous_state=payload.get("state") or {},
+        registry=builtin_registry(),
+        now=payload.get("now"),
+        feedback=payload.get("feedback"),
+    )
+    print(format_weight_explanation(explain_weights(result.report.to_dict())))
+    return 0
+
+
+def _redact_report(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    redacted = redact_value(report, args.field)
+    Path(args.out).write_text(json.dumps(redacted, indent=2, sort_keys=True), encoding="utf-8")
+    print(f"wrote redacted report: {args.out}")
+    return 0
+
+
+def _report(args: argparse.Namespace) -> int:
+    if args.report_command == "validate":
+        report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+        validate_decision_report_data(report)
+        print("valid report")
+        return 0
+    return 0
 
 
 def _example(args: argparse.Namespace) -> int:

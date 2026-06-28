@@ -1,0 +1,20 @@
+id: splot_example_process
+version: 1
+steps:
+  - id: decide
+    command: splot-fala-step
+    input:
+      profile_path: examples/profiles/player-camera-director
+      observations_artifact: observations.json
+      state_artifact: state.json
+    output:
+      artifacts:
+        - kind: splot_decision_report
+          path: decision_report.json
+        - kind: splot_state
+          path: state.json
+      events:
+        - splot.decision_committed
+      gates:
+        - when: decision.status == needs_human_decision
+          kind: manual_decision

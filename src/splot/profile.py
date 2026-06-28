@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .errors import SplotProfileError
 
-class ProfileError(ValueError):
+
+class ProfileError(SplotProfileError):
     pass
 
 
@@ -74,14 +76,19 @@ def diagnose_profile(
     path_or_data: str | Path | dict[str, Any] | SplotProfile,
     registry: Any | None = None,
 ) -> list[ProfileDiagnostic]:
+    diagnostics: list[ProfileDiagnostic] = []
+    path = _profile_file_for(path_or_data)
+    if path and path.exists():
+        diagnostics.extend(_yaml_subset_warnings(path))
     try:
         profile = load_profile(path_or_data)
         validate_profile(profile, registry=registry)
-        return []
+        diagnostics.extend(_profile_warnings(profile, registry=registry))
+        return diagnostics
     except ProfileError as exc:
-        path = _profile_file_for(path_or_data)
         line = _line_for_message(path, str(exc)) if path else None
-        return [ProfileDiagnostic(message=str(exc), path=path, line=line)]
+        diagnostics.append(ProfileDiagnostic(message=str(exc), path=path, line=line))
+        return diagnostics
 
 
 def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None:
@@ -126,6 +133,12 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     if profile.mode in {"select_one", "route", "regulate", "compose"} and signals and total_weight <= 0:
         raise ProfileError("at least one signal weight must be positive")
 
+    for provider in data.get("required_providers") or []:
+        if not isinstance(provider, str):
+            raise ProfileError("required_providers entries must be provider names")
+        if registry is not None and not registry.has(provider):
+            raise ProfileError(f"unregistered required provider: {provider}")
+
     for provider_config in data.get("observation_providers") or []:
         provider = provider_config.get("provider") if isinstance(provider_config, dict) else None
         if not provider:
@@ -144,9 +157,13 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     if candidate_config.get("provider") and registry is not None and not registry.has(candidate_config["provider"]):
         raise ProfileError(f"unregistered candidate provider: {candidate_config['provider']}")
 
+    constraint_ids: set[str] = set()
     for constraint in data.get("constraints") or []:
         if not isinstance(constraint, dict) or not constraint.get("id"):
             raise ProfileError("each constraint needs an id")
+        if constraint["id"] in constraint_ids:
+            raise ProfileError(f"duplicate constraint id: {constraint['id']}")
+        constraint_ids.add(constraint["id"])
         signal_ref = constraint.get("signal")
         if signal_ref and signal_ref not in signal_ids:
             raise ProfileError(f"constraint references unknown signal: {signal_ref}")
@@ -260,6 +277,75 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
             raise ProfileError("each feedback handler needs a provider")
         if registry is not None and not registry.has(provider):
             raise ProfileError(f"unregistered feedback handler: {provider}")
+
+
+def _profile_warnings(profile: SplotProfile, registry: Any | None = None) -> list[ProfileDiagnostic]:
+    diagnostics: list[ProfileDiagnostic] = []
+    declared_sidecars = profile.raw.get("sidecars")
+    if declared_sidecars is not None:
+        expected = {str(item) for item in declared_sidecars or []}
+        found = set((profile.sidecars or {}).keys())
+        for missing in sorted(expected - found):
+            diagnostics.append(
+                ProfileDiagnostic(f"declared sidecar is missing: {missing}", profile.path, severity="warn")
+            )
+        for unused in sorted(found - expected):
+            diagnostics.append(
+                ProfileDiagnostic(f"Markdown sidecar is not declared: {unused}", profile.path, severity="warn")
+            )
+    if registry is not None:
+        for provider in sorted(set(_referenced_providers(profile.raw))):
+            if not registry.has(provider):
+                diagnostics.append(
+                    ProfileDiagnostic(f"unregistered provider reference: {provider}", profile.path, severity="warn")
+                )
+    return diagnostics
+
+
+def _referenced_providers(data: dict[str, Any]) -> list[str]:
+    providers: list[str] = []
+    collections = (
+        data.get("signals") or [],
+        data.get("constraints") or [],
+        data.get("verifiers") or [],
+        data.get("evidence") or data.get("evidence_builders") or [],
+        data.get("observation_providers") or [],
+        data.get("candidate_providers") or [],
+        data.get("postprocess") or [],
+        data.get("feedback_handlers") or [],
+    )
+    for collection in collections:
+        if isinstance(collection, dict):
+            collection = [collection]
+        for item in collection:
+            if isinstance(item, dict) and item.get("provider"):
+                providers.append(str(item["provider"]))
+    for section, key in (
+        ("candidate", "provider"),
+        ("scoring", "provider"),
+        ("decision_renderer", "provider"),
+        ("decision", "renderer"),
+    ):
+        config = data.get(section) or {}
+        if isinstance(config, dict) and config.get(key):
+            providers.append(str(config[key]))
+    providers.extend(str(item) for item in data.get("required_providers") or [] if isinstance(item, str))
+    return providers
+
+
+def _yaml_subset_warnings(path: Path) -> list[ProfileDiagnostic]:
+    diagnostics: list[ProfileDiagnostic] = []
+    for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if "\t" in line:
+            diagnostics.append(ProfileDiagnostic("fallback YAML parser does not support tabs", path, index, "warn"))
+        if stripped.startswith("<<:") or "<<" in stripped:
+            diagnostics.append(ProfileDiagnostic("fallback YAML parser does not support merge keys", path, index, "warn"))
+        if stripped.startswith("&") or " &" in line or stripped.startswith("*") or " *" in line:
+            diagnostics.append(ProfileDiagnostic("fallback YAML parser does not support anchors or aliases", path, index, "warn"))
+        if "{" in stripped and "}" in stripped:
+            diagnostics.append(ProfileDiagnostic("fallback YAML parser does not support inline mappings", path, index, "warn"))
+    return diagnostics
 
 
 def _as_number(value: Any, label: str) -> float:

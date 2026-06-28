@@ -1,4 +1,5 @@
 import unittest
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -78,6 +79,20 @@ class FalaAdapterTests(unittest.TestCase):
 
         self.assertIn("values", result)
         self.assertIn("artifacts", result)
+        self.assertEqual(result["values"]["decision"]["status"], "selected")
+        self.assertEqual(result["artifacts"][0]["kind"], "splot_decision_report")
+
+    def test_fala_integration_example_payload_runs(self):
+        old_artifact_dir = os.environ.get("PROCESS_RUNTIME_ARTIFACT_DIR")
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["PROCESS_RUNTIME_ARTIFACT_DIR"] = tmp
+            payload = json.loads((ROOT / "examples/fala-integration/stdin.json").read_text(encoding="utf-8"))
+            result = process_runtime_step(payload)
+        if old_artifact_dir is None:
+            os.environ.pop("PROCESS_RUNTIME_ARTIFACT_DIR", None)
+        else:
+            os.environ["PROCESS_RUNTIME_ARTIFACT_DIR"] = old_artifact_dir
+
         self.assertEqual(result["values"]["decision"]["status"], "selected")
         self.assertEqual(result["artifacts"][0]["kind"], "splot_decision_report")
 

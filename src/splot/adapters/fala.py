@@ -152,7 +152,7 @@ def _process_payload(context: dict[str, Any]) -> dict[str, Any]:
     config = dict(context.get("config") or {})
     values = dict((context.get("input") or {}).get("values") or {})
     initial = dict(values.get("initial") or {})
-    merged = {**initial, **values, **config}
+    merged = {**context, **initial, **values, **config}
     if "profile" not in merged:
         raise ValueError("Splot Fala step requires profile in config or input values")
     return merged

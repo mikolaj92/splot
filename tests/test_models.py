@@ -17,6 +17,12 @@ class ModelTests(unittest.TestCase):
         )
         state = SplotState(previous_decision=decision.to_dict())
         report = DecisionReport(
+            splot_version="0.1.0",
+            profile_version=1,
+            profile_digest="digest",
+            profile_schema_version=1,
+            report_schema_version=1,
+            input_digest="input",
             round_id="round_1",
             profile_id="profile",
             mode="select_one",

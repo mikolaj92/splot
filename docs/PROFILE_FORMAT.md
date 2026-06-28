@@ -34,6 +34,8 @@ Common sections:
 - `feedback_handlers`
 - `postprocess`
 - `explain`
+- `required_providers`
+- `sidecars`
 
 Providers are looked up in `FunctionRegistry`. YAML cannot import modules,
 execute shell commands, loop, or define arbitrary conditionals.
@@ -73,3 +75,8 @@ PYTHONPATH=src python -m splot.cli profile diagnose examples/profiles/player-cam
 
 `diagnose` prints file and line information for validation failures when the
 failing provider, policy, signal, or section can be located.
+
+It also warns about declared Markdown sidecars that are missing, undeclared
+sidecars when `sidecars` is present, missing required providers, and YAML
+features outside Splot's fallback parser. See `docs/YAML_SUBSET.md` and
+`docs/PROVIDERS.md`.

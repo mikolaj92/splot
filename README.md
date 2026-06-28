@@ -25,7 +25,10 @@ only a thin adapter in `splot.adapters.fala`.
 PYTHONPATH=src python -m splot.cli profile validate examples/profiles/player-camera-director
 PYTHONPATH=src python -m splot.cli examples run camera --out decision_report.json
 PYTHONPATH=src python -m splot.cli explain decision_report.json
+PYTHONPATH=src python -m splot.cli explain-weights decision_report.json
 PYTHONPATH=src python -m splot.cli audit-report decision_report.json
+PYTHONPATH=src python -m splot.cli report validate decision_report.json
+PYTHONPATH=src python -m splot.cli export-html decision_report.json --out report.html --redact
 PYTHONPATH=src python -m splot.cli replay-round --profile examples/profiles/player-camera-director --report decision_report.json
 PYTHONPATH=src python -m splot.cli examples run contract-compose
 PYTHONPATH=src python -m unittest discover -s tests
@@ -87,8 +90,10 @@ Implemented:
 - hysteresis, cooldown, min-hold, debounce, hold-then-recheck, and switching cost
 - stale-source behavior: ignore, penalize, block, or request more evidence
 - JSON state/report output plus memory and JSON file state stores
-- CLI for validate, decide, inspect, explain, replay, state init, and examples
-- report audit and replay comparison helpers
+- report schema/version/digest metadata for replay and audit
+- CLI for validate, decide, inspect, explain, report validate, HTML export,
+  report redaction, weight explanation, replay, state init, and examples
+- report audit, report comparison, and replay comparison helpers
 - import-free Fala-shaped adapter plus `splot-fala-step` process-runtime entrypoint
 
 Boundaries:
@@ -100,3 +105,5 @@ Boundaries:
   `yaml.safe_load`.
 - Built-in domain functions are intentionally generic. Real domains should
   register their own providers.
+- Static HTML reports are local debug artifacts; Splot does not ship a web
+  server, broker, database, or scheduler.

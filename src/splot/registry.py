@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from .errors import SplotRegistryError
 from .models import SplotState, Candidate, Evidence, Observation, new_id
 
 
@@ -41,7 +42,7 @@ class FunctionRegistry:
         try:
             return self._functions[name]
         except KeyError as exc:
-            raise KeyError(f"function is not registered: {name}") from exc
+            raise SplotRegistryError(f"function is not registered: {name}") from exc
 
     def call(self, name: str, context: FunctionContext) -> Any:
         return self.get(name)(context)

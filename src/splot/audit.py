@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .schemas import SchemaValidationError, validate_decision_report_data
+
 
 @dataclass
 class ReportAuditFinding:
@@ -15,7 +17,17 @@ class ReportAuditFinding:
 
 def audit_report(report: dict[str, Any]) -> list[ReportAuditFinding]:
     findings: list[ReportAuditFinding] = []
+    try:
+        validate_decision_report_data(report)
+    except SchemaValidationError as exc:
+        findings.append(ReportAuditFinding("error", f"schema validation failed: {exc}"))
     for key in (
+        "splot_version",
+        "profile_version",
+        "profile_digest",
+        "profile_schema_version",
+        "report_schema_version",
+        "input_digest",
         "round_id",
         "profile_id",
         "mode",
@@ -72,3 +84,26 @@ def compare_replay(original: dict[str, Any], replayed: dict[str, Any]) -> list[R
             )
     return findings
 
+
+def compare_reports(old: dict[str, Any], new: dict[str, Any]) -> list[ReportAuditFinding]:
+    findings: list[ReportAuditFinding] = []
+    for key in ("profile_id", "mode", "objective_id", "profile_digest", "report_schema_version"):
+        if old.get(key) != new.get(key):
+            findings.append(ReportAuditFinding("warn", f"{key} differs: {old.get(key)!r} != {new.get(key)!r}"))
+
+    old_decision = old.get("decision") or {}
+    new_decision = new.get("decision") or {}
+    for key in ("status", "selected_candidate_id", "selected_candidate_ids"):
+        if old_decision.get(key) != new_decision.get(key):
+            findings.append(
+                ReportAuditFinding(
+                    "warn",
+                    f"decision {key} differs: {old_decision.get(key)!r} != {new_decision.get(key)!r}",
+                )
+            )
+
+    old_confidence = old_decision.get("confidence")
+    new_confidence = new_decision.get("confidence")
+    if old_confidence != new_confidence:
+        findings.append(ReportAuditFinding("warn", f"decision confidence differs: {old_confidence!r} != {new_confidence!r}"))
+    return findings

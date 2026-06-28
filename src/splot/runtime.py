@@ -25,6 +25,13 @@ from .reports import apply_report_postprocessors
 from .scoring import evaluate_candidates
 from .stability import apply_stability
 from .state import update_state
+from .versioning import (
+    PROFILE_SCHEMA_VERSION,
+    REPORT_SCHEMA_VERSION,
+    SPLOT_VERSION,
+    digest_profile,
+    digest_round_input,
+)
 
 
 @dataclass
@@ -49,6 +56,7 @@ def run_round(
     now_text = _now_text(now)
     state = previous_state if isinstance(previous_state, SplotState) else SplotState.from_dict(previous_state)
     state.objective_id = loaded_profile.objective_id
+    previous_state_snapshot = state.to_dict()
     feedback = apply_feedback_handlers(loaded_profile.raw, feedback, state, registry, now_text)
     observation_models = [_observation(item) for item in observations or []]
     observation_models.extend(_load_observations_from_providers(loaded_profile.raw, state, registry, now_text))
@@ -62,6 +70,12 @@ def run_round(
         candidate_models = _load_candidates_from_provider(
             loaded_profile.raw, observation_models, state, registry, now_text
         )
+    input_digest = digest_round_input(
+        [item.to_dict() for item in observation_models],
+        [item.to_dict() for item in candidate_models],
+        previous_state_snapshot,
+        feedback,
+    )
 
     evaluations = evaluate_candidates(
         loaded_profile.raw, observation_models, candidate_models, state, registry, now_text
@@ -153,6 +167,7 @@ def run_round(
         state,
         updated_state,
         now_text,
+        input_digest,
     )
     report = apply_report_postprocessors(loaded_profile.raw, report, updated_state, registry, now_text)
     return RoundResult(decision=decision, state=updated_state, report=report)
@@ -253,11 +268,18 @@ def _build_report(
     previous_state: SplotState,
     updated_state: SplotState,
     now: str,
+    input_digest: str,
 ) -> DecisionReport:
     warnings = list(decision.warnings)
     for evaluation in evaluations:
         warnings.extend(evaluation.warnings)
     return DecisionReport(
+        splot_version=SPLOT_VERSION,
+        profile_version=int(profile.raw.get("version", 1)),
+        profile_digest=digest_profile(profile.raw, profile.path),
+        profile_schema_version=PROFILE_SCHEMA_VERSION,
+        report_schema_version=REPORT_SCHEMA_VERSION,
+        input_digest=input_digest,
         round_id=new_id("round"),
         profile_id=profile.id,
         mode=profile.mode,
