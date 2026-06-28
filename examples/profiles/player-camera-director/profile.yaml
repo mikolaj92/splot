@@ -76,10 +76,13 @@ uncertainty:
   when_conflicting: request_more_evidence
   when_no_candidate: fallback
   when_constraints_block_all: fallback
+  when_source_stale: request_more_evidence
+
+feedback_handlers:
+  - provider: feedback.acceptance_reliability
 
 explain:
   include_scores: true
   include_rejected_candidates: true
   include_constraints: true
   include_stability: true
-

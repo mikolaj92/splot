@@ -24,3 +24,15 @@
 Policies are deliberately small. Domain-specific scoring and validation should
 be registered functions, not YAML logic.
 
+## Uncertainty Behavior
+
+Supported profile keys under `uncertainty`:
+
+- `when_close`: `keep_previous`, `human_decision`, `request_more_evidence`, or `select_best_anyway`
+- `when_conflicting`: `human_decision`, `request_more_evidence`, `fallback`, or `conflict`
+- `when_no_candidate`: `fallback`, `no_candidate`, or `human_decision`
+- `when_constraints_block_all`: `fallback`, `human_decision`, or `rejected_all`
+- `when_source_stale`: `ignore`, `penalize`, `block`, or `request_more_evidence`
+- `stale_penalty`: score penalty used by `when_source_stale: penalize`
+
+Decision reports expose both decision uncertainty and belief uncertainty.

@@ -5,7 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from .models import SplotState, CandidateEvaluation, Decision
+from .models import SplotState, Belief, CandidateEvaluation, Decision, Evidence
 
 
 def update_state(
@@ -15,6 +15,8 @@ def update_state(
     now: str,
     stability_memory_updates: dict[str, Any] | None = None,
     feedback: dict[str, Any] | None = None,
+    evidence: list[Evidence] | None = None,
+    belief: Belief | None = None,
 ) -> SplotState:
     previous_selected = (state.previous_decision or {}).get("selected_candidate_id")
     updated = SplotState.from_dict(state.to_dict())
@@ -39,8 +41,32 @@ def update_state(
             "scores": {evaluation.candidate_id: evaluation.score for evaluation in evaluations},
         }
     )
+    if evidence:
+        updated.evidence_history.extend(
+            {
+                "at": now,
+                "decision_id": decision.id,
+                "evidence_id": item.id,
+                "candidate_id": item.candidate_id,
+                "supports": item.supports,
+                "opposes": item.opposes,
+                "strength": item.strength,
+                "confidence": item.confidence,
+                "reasons": item.reasons,
+            }
+            for item in evidence
+        )
+        updated.evidence_history = updated.evidence_history[-500:]
+    if belief:
+        updated.metadata["last_belief"] = belief.to_dict()
+        updated.metadata["belief_history"] = belief.history
+        updated.unresolved_conflicts = list(belief.conflicts)
     if feedback:
         updated.metadata.setdefault("feedback", []).append(deepcopy(feedback))
+        if feedback.get("state_updates"):
+            updated.metadata.setdefault("feedback_state_updates", []).append(
+                deepcopy(feedback["state_updates"])
+            )
         updated.source_reliability.update(feedback.get("reliability_updates") or {})
     return updated
 
@@ -56,4 +82,3 @@ def load_state_file(path: str | Path | None) -> SplotState:
 
 def write_state_file(path: str | Path, state: SplotState) -> None:
     Path(path).write_text(json.dumps(state.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
-

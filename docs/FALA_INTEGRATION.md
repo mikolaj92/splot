@@ -12,6 +12,7 @@ result = arbitration_step({
     "candidates": [],
     "state": {},
     "output_report": "decision_report.json",
+    "output_state": "state.json",
 })
 ```
 
@@ -25,4 +26,14 @@ Suggested mapping for a real Fala host:
 - Gate -> human decision required
 - RuntimeRef -> another wave or runtime source
 
-This file is a scaffold, not a real Fala event/gate implementation.
+The adapter returns:
+
+- `decision`
+- `state`
+- `decision_report`
+- `artifacts`: currently a decision report artifact descriptor
+- `events`: currently `splot.round_completed`
+- `gates`: human-decision descriptors when required
+
+This file is still import-free. A real Fala host should translate those
+descriptors into actual artifacts, events, projections, and gates.

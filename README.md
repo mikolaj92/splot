@@ -24,6 +24,8 @@ only a thin adapter in `splot.adapters.fala`.
 ```bash
 PYTHONPATH=src python -m splot.cli profile validate examples/profiles/player-camera-director
 PYTHONPATH=src python -m splot.cli examples run camera --out decision_report.json
+PYTHONPATH=src python -m splot.cli explain decision_report.json
+PYTHONPATH=src python -m splot.cli replay-round --profile examples/profiles/player-camera-director --report decision_report.json
 PYTHONPATH=src python -m splot.cli examples run contract-compose
 PYTHONPATH=src python -m unittest discover -s tests
 ```
@@ -68,18 +70,29 @@ stability policy, uncertainty behavior, and safe provider references such as
 Implemented:
 
 - dataclass models for waves, observations, evidence, candidates, decisions,
-  reports, feedback, and state
+  belief snapshots, reports, feedback, and state
 - folder profile loading with Markdown sidecars
-- safe function registry
+- safe function registry with categories for signals, constraints, evidence,
+  postprocessors, and feedback handlers
+- evidence generation from signal evaluations or registered evidence builders
+- belief snapshots with candidate support/opposition, uncertainty, conflicts,
+  stale sources, reliability, and history
 - weighted scoring with higher/lower/boolean/target normalization
 - block/warn/human-decision/penalize constraints
 - select, route, regulate-style action status, and section composition
+- composition dependencies, compatibility rules, global constraints, conflict
+  reporting, and composed payload plans
 - hysteresis, cooldown, min-hold, debounce, hold-then-recheck, and switching cost
-- JSON state and report output
-- CLI for validate, decide, state init, and examples
+- stale-source behavior: ignore, penalize, block, or request more evidence
+- JSON state/report output plus memory and JSON file state stores
+- CLI for validate, decide, inspect, explain, replay, state init, and examples
+- import-free Fala-shaped adapter returning artifacts, events, and gates
 
 Scaffolded:
 
-- evidence builders and belief updates are modeled but not yet deeply populated
-- Fala adapter is import-free and manifest-shaped, not wired to real Fala events
-- postprocessors are allowed through the registry but only identity is built in
+- Fala adapter returns Fala-shaped artifacts/events/gates, but does not call a
+  real Fala runtime API.
+- Profile YAML uses stdlib fallback parsing; if PyYAML is installed, Splot uses
+  `yaml.safe_load`.
+- Built-in domain functions are intentionally generic. Real domains should
+  register their own providers.

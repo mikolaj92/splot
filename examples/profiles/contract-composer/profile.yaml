@@ -20,6 +20,11 @@ composition:
       required: true
     - id: termination
       required: true
+  compatibility:
+    - id: compensation_requires_ip
+      require_together: [compensation_a, ip_a]
+      severity: human_decision
+      reason: compensation and IP sections need a human compatibility check
 
 signals:
   - id: goal_fit
@@ -70,4 +75,3 @@ explain:
   include_section_sources: true
   include_warnings: true
   include_human_decisions: true
-

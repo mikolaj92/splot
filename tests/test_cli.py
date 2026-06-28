@@ -47,6 +47,38 @@ class CliTests(unittest.TestCase):
             self.assertEqual(report["decision"]["status"], "kept_previous")
             self.assertEqual(saved_state["previous_decision"]["status"], "kept_previous")
 
+    def test_inspect_explain_and_replay_commands(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "report.json"
+            replayed = Path(tmp) / "replayed.json"
+            decide = self.run_cli(
+                "decide",
+                "--profile",
+                "examples/profiles/player-camera-director",
+                "--input",
+                "examples/inputs/camera_round_1.json",
+                "--out",
+                str(out),
+            )
+            self.assertEqual(decide.returncode, 0, decide.stderr)
+
+            inspect = self.run_cli("inspect-decision", str(out))
+            explain = self.run_cli("explain", str(out))
+            replay = self.run_cli(
+                "replay-round",
+                "--profile",
+                "examples/profiles/player-camera-director",
+                "--report",
+                str(out),
+                "--out",
+                str(replayed),
+            )
+
+            self.assertEqual(inspect.returncode, 0, inspect.stderr)
+            self.assertEqual(explain.returncode, 0, explain.stderr)
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            self.assertTrue(replayed.exists())
+
     def test_state_init_command(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp) / "state.json"

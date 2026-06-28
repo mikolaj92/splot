@@ -7,7 +7,8 @@ PYTHONPATH=src python -m splot.cli examples run camera --out decision_report.jso
 ```
 
 Demonstrates weighted scoring, blocking constraints, current-candidate bonus,
-hysteresis, cooldown, and keeping the current candidate when close.
+hysteresis, cooldown, feedback handler wiring, stale-source behavior, and
+keeping the current candidate when close.
 
 ## Contract Compose
 
@@ -15,8 +16,9 @@ hysteresis, cooldown, and keeping the current candidate when close.
 PYTHONPATH=src python -m splot.cli examples run contract-compose
 ```
 
-Demonstrates section-by-section composition with a human-decision point. The
-core reads generic section slots and flags; it performs no legal analysis.
+Demonstrates section-by-section composition with compatibility rules and a
+human-decision point. The core reads generic section slots and flags; it
+performs no legal analysis.
 
 ## Route
 

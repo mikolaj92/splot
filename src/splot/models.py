@@ -242,6 +242,7 @@ class DecisionReport(JsonModel):
     observations: list[JsonDict]
     candidates: list[JsonDict]
     evidence: list[JsonDict]
+    belief: JsonDict
     evaluations: list[JsonDict]
     stability: JsonDict
     decision: JsonDict
@@ -252,4 +253,3 @@ class DecisionReport(JsonModel):
     warnings: list[str] = field(default_factory=list)
     human_decisions: list[str] = field(default_factory=list)
     state_updates: JsonDict = field(default_factory=dict)
-

@@ -22,3 +22,10 @@ candidates. The core never imports domain libraries.
 
 The camera/director metaphor is only one example. The technical concept is
 stateful information arbitration.
+
+Every round now emits:
+
+- candidate evaluations with signals, scores, constraints, and verifier results
+- evidence, either from registered builders or signal-derived defaults
+- belief snapshot with conflicts, stale sources, reliability, and history
+- decision report suitable for replay, debugging, and audit

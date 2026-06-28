@@ -66,6 +66,13 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     if not isinstance(data.get("objective"), dict) or "id" not in data["objective"]:
         raise ProfileError("objective.id is required")
 
+    for wave in data.get("waves") or []:
+        if not isinstance(wave, dict) or not wave.get("id"):
+            raise ProfileError("each wave needs an id")
+        reliability = _as_number(wave.get("reliability", 1.0), f"wave {wave['id']} reliability")
+        if not 0 <= reliability <= 1:
+            raise ProfileError(f"wave {wave['id']} reliability must be between 0 and 1")
+
     signals = data.get("signals") or []
     if not isinstance(signals, list):
         raise ProfileError("signals must be a list")
@@ -77,9 +84,14 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
         if signal["id"] in signal_ids:
             raise ProfileError(f"duplicate signal id: {signal['id']}")
         signal_ids.add(signal["id"])
+        if signal.get("prefer", "higher") not in {"higher", "lower", "target", "boolean"}:
+            raise ProfileError(f"signal {signal['id']} has invalid prefer: {signal.get('prefer')}")
         weight = _as_number(signal.get("weight", 1.0), f"signal {signal['id']} weight")
         if weight < 0:
             raise ProfileError(f"signal {signal['id']} weight must be non-negative")
+        for threshold in ("min", "max", "target"):
+            if threshold in signal:
+                _as_number(signal[threshold], f"signal {signal['id']} {threshold}")
         total_weight += weight
         if signal.get("provider") and registry is not None and not registry.has(signal["provider"]):
             raise ProfileError(f"unregistered signal provider: {signal['provider']}")
@@ -97,11 +109,28 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
             raise ProfileError(f"unregistered constraint provider: {provider}")
         if constraint.get("severity") not in {None, "block", "warn", "human_decision", "penalize"}:
             raise ProfileError(f"invalid constraint severity: {constraint.get('severity')}")
+        if constraint.get("operator") not in {None, "gte", ">=", "gt", ">", "lte", "<=", "lt", "<", "eq", "==", "neq", "!="}:
+            raise ProfileError(f"invalid constraint operator: {constraint.get('operator')}")
+        if "penalty" in constraint:
+            penalty = _as_number(constraint["penalty"], f"constraint {constraint['id']} penalty")
+            if not 0 <= penalty <= 1:
+                raise ProfileError(f"constraint {constraint['id']} penalty must be between 0 and 1")
 
     for verifier in data.get("verifiers") or []:
         provider = verifier.get("provider") if isinstance(verifier, dict) else None
         if provider and registry is not None and not registry.has(provider):
             raise ProfileError(f"unregistered verifier: {provider}")
+
+    for evidence_config in data.get("evidence") or data.get("evidence_builders") or []:
+        if not isinstance(evidence_config, dict):
+            raise ProfileError("each evidence builder must be a mapping")
+        provider = evidence_config.get("provider")
+        if not provider:
+            raise ProfileError("each evidence builder needs a provider")
+        if registry is not None and not registry.has(provider):
+            raise ProfileError(f"unregistered evidence builder: {provider}")
+        if evidence_config.get("scope", "candidate") not in {"candidate", "round"}:
+            raise ProfileError(f"invalid evidence builder scope: {evidence_config.get('scope')}")
 
     decision = data.get("decision") or {}
     policy = decision.get("policy", "constrained_weighted_score")
@@ -149,11 +178,32 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
         sections = composition.get("sections") or []
         if not sections:
             raise ProfileError("compose mode requires composition.sections")
+        section_ids: set[str] = set()
+        for section in sections:
+            if not isinstance(section, dict) or not section.get("id"):
+                raise ProfileError("each composition section needs an id")
+            if section["id"] in section_ids:
+                raise ProfileError(f"duplicate composition section id: {section['id']}")
+            section_ids.add(section["id"])
+        for rule in (composition.get("compatibility") or []) + (composition.get("global_constraints") or []):
+            if not isinstance(rule, dict):
+                raise ProfileError("composition compatibility rules must be mappings")
+            if rule.get("severity", "human_decision") not in {"block", "warn", "human_decision"}:
+                raise ProfileError(f"invalid composition rule severity: {rule.get('severity')}")
+            if not rule.get("forbid_together") and not rule.get("require_together"):
+                raise ProfileError("composition rule needs forbid_together or require_together")
 
     for postprocessor in data.get("postprocess") or []:
         provider = postprocessor.get("provider") if isinstance(postprocessor, dict) else None
         if provider and registry is not None and not registry.has(provider):
             raise ProfileError(f"unregistered postprocessor: {provider}")
+
+    for feedback_handler in data.get("feedback_handlers") or []:
+        provider = feedback_handler.get("provider") if isinstance(feedback_handler, dict) else None
+        if not provider:
+            raise ProfileError("each feedback handler needs a provider")
+        if registry is not None and not registry.has(provider):
+            raise ProfileError(f"unregistered feedback handler: {provider}")
 
 
 def _as_number(value: Any, label: str) -> float:
@@ -171,6 +221,14 @@ def load_simple_yaml(text: str) -> Any:
     It intentionally supports only mappings, lists, scalars, and inline scalar
     lists. Use PyYAML in an application if you need full YAML.
     """
+
+    try:
+        import yaml  # type: ignore
+    except ModuleNotFoundError:
+        yaml = None
+    if yaml is not None:
+        loaded = yaml.safe_load(text)
+        return loaded if loaded is not None else {}
 
     lines: list[tuple[int, str]] = []
     for raw_line in text.splitlines():
@@ -302,4 +360,3 @@ def _strip_comment(line: str) -> str:
         if char == "#" and quote is None:
             return line[:index]
     return line
-

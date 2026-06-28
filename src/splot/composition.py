@@ -20,6 +20,7 @@ def decide_composition(
     warnings: list[str] = []
     human_decisions: list[str] = []
     rejected: list[dict[str, Any]] = []
+    conflicts: list[dict[str, Any]] = []
 
     for section in sections:
         section_id = str(section["id"])
@@ -41,15 +42,53 @@ def decide_composition(
         warnings.extend(best.warnings)
         human_decisions.extend(best.human_decisions)
 
+    selected_ids = list(selected_by_section.values())
+    selected_set = set(selected_ids)
+    for candidate in candidates:
+        if candidate.id not in selected_set:
+            continue
+        missing_dependencies = [item for item in candidate.dependencies if item not in selected_set]
+        if missing_dependencies:
+            conflicts.append(
+                {
+                    "kind": "missing_dependency",
+                    "candidate_id": candidate.id,
+                    "missing": missing_dependencies,
+                }
+            )
+
+    for rule in (profile.get("composition") or {}).get("compatibility") or []:
+        conflict = _evaluate_compatibility_rule(rule, selected_set)
+        if conflict:
+            conflicts.append(conflict)
+
+    for rule in (profile.get("composition") or {}).get("global_constraints") or []:
+        conflict = _evaluate_compatibility_rule(rule, selected_set)
+        if conflict:
+            conflicts.append(conflict)
+
+    for conflict in conflicts:
+        severity = conflict.get("severity", "human_decision")
+        reason = conflict.get("reason", conflict["kind"])
+        if severity == "warn":
+            warnings.append(reason)
+        elif severity == "block":
+            rejected.append({"candidate_id": None, "reasons": [reason]})
+        else:
+            human_decisions.append(reason)
+
     plan = {
         "unit": (profile.get("composition") or {}).get("unit", "section"),
         "selected_by_section": selected_by_section,
         "missing_required": missing_required,
+        "composed_payload": _composed_payload(candidates, selected_by_section),
+        "conflicts": conflicts,
     }
     status = "composed"
-    if missing_required or human_decisions:
+    if any(item.get("severity") == "block" for item in conflicts):
+        status = "conflict"
+    elif missing_required or human_decisions:
         status = "needs_human_decision"
-    selected_ids = list(selected_by_section.values())
     confidence = _mean(
         [evaluation.score for evaluation in evaluations if evaluation.candidate_id in set(selected_ids)]
     )
@@ -84,3 +123,41 @@ def _candidate_section(candidates: list[Candidate], candidate_id: str) -> str | 
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
+
+def _composed_payload(
+    candidates: list[Candidate],
+    selected_by_section: dict[str, str],
+) -> dict[str, Any]:
+    by_id = {candidate.id: candidate for candidate in candidates}
+    return {
+        section: by_id[candidate_id].payload
+        for section, candidate_id in selected_by_section.items()
+        if candidate_id in by_id
+    }
+
+
+def _evaluate_compatibility_rule(rule: dict[str, Any], selected_ids: set[str]) -> dict[str, Any] | None:
+    severity = rule.get("severity", "human_decision")
+    reason = rule.get("reason") or rule.get("id") or "composition constraint"
+    if "forbid_together" in rule:
+        candidate_ids = set(rule["forbid_together"])
+        if candidate_ids.issubset(selected_ids):
+            return {
+                "kind": "forbid_together",
+                "candidate_ids": sorted(candidate_ids),
+                "severity": severity,
+                "reason": reason,
+            }
+    if "require_together" in rule:
+        candidate_ids = set(rule["require_together"])
+        overlap = candidate_ids & selected_ids
+        if overlap and not candidate_ids.issubset(selected_ids):
+            return {
+                "kind": "require_together",
+                "candidate_ids": sorted(candidate_ids),
+                "selected": sorted(overlap),
+                "missing": sorted(candidate_ids - selected_ids),
+                "severity": severity,
+                "reason": reason,
+            }
+    return None

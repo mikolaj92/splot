@@ -31,6 +31,17 @@ def main(argv: list[str] | None = None) -> int:
     decide_parser.add_argument("--state")
     decide_parser.add_argument("--out")
 
+    inspect_parser = subcommands.add_parser("inspect-decision")
+    inspect_parser.add_argument("report")
+
+    explain_parser = subcommands.add_parser("explain")
+    explain_parser.add_argument("report")
+
+    replay_parser = subcommands.add_parser("replay-round")
+    replay_parser.add_argument("--profile", required=True)
+    replay_parser.add_argument("--report", required=True)
+    replay_parser.add_argument("--out")
+
     state_parser = subcommands.add_parser("state")
     state_subcommands = state_parser.add_subparsers(dest="state_command", required=True)
     state_init = state_subcommands.add_parser("init")
@@ -48,6 +59,12 @@ def main(argv: list[str] | None = None) -> int:
             return _profile(args)
         if args.command == "decide":
             return _decide(args)
+        if args.command == "inspect-decision":
+            return _inspect(args)
+        if args.command == "explain":
+            return _explain(args)
+        if args.command == "replay-round":
+            return _replay(args)
         if args.command == "state":
             return _state(args)
         if args.command == "examples":
@@ -91,6 +108,50 @@ def _decide(args: argparse.Namespace) -> int:
 def _state(args: argparse.Namespace) -> int:
     write_state_file(args.out, SplotState())
     print(f"wrote state: {args.out}")
+    return 0
+
+
+def _inspect(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    _print_summary(report["decision"])
+    if report.get("human_decisions"):
+        print("human_decisions:")
+        for item in report["human_decisions"]:
+            print(f"- {item}")
+    return 0
+
+
+def _explain(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    _print_summary(report["decision"])
+    for reason in report.get("policy_reasons") or []:
+        print(f"policy: {reason}")
+    stability = report.get("stability") or {}
+    if stability:
+        print(f"stability: {stability.get('decision')} ({stability.get('policy')})")
+    rejected = report.get("decision", {}).get("rejected_candidates") or []
+    for item in rejected:
+        print(f"rejected {item.get('candidate_id')}: {', '.join(item.get('reasons') or [])}")
+    uncertainty = report.get("uncertainty") or {}
+    if uncertainty.get("conflicts"):
+        print(f"conflicts: {len(uncertainty['conflicts'])}")
+    return 0
+
+
+def _replay(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    result = run_round(
+        profile=args.profile,
+        observations=report.get("observations") or [],
+        candidates=report.get("candidates") or [],
+        previous_state=report.get("previous_state") or {},
+        registry=builtin_registry(),
+        now=report.get("created_at"),
+    )
+    output = result.report.to_dict()
+    if args.out:
+        Path(args.out).write_text(json.dumps(output, indent=2, sort_keys=True), encoding="utf-8")
+    _print_summary(result.decision.to_dict())
     return 0
 
 

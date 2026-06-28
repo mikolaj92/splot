@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .models import SplotState, Candidate, Observation
+from .models import SplotState, Candidate, Evidence, Observation, new_id
 
 
 Provider = Callable[["FunctionContext"], Any]
@@ -48,6 +48,12 @@ class FunctionRegistry:
 
     def names(self) -> list[str]:
         return sorted(self._functions)
+
+    def names_by_category(self, category: str) -> list[str]:
+        return sorted(name for name, item_category in self._categories.items() if item_category == category)
+
+    def category(self, name: str) -> str | None:
+        return self._categories.get(name)
 
 
 def _candidate_value(context: FunctionContext) -> Any:
@@ -97,6 +103,45 @@ def _identity_postprocess(context: FunctionContext) -> Any:
     return context.report
 
 
+def _payload_evidence(context: FunctionContext) -> list[dict[str, Any]]:
+    candidate = _require_candidate(context)
+    payload_evidence = candidate.payload.get("evidence") or candidate.metadata.get("evidence") or []
+    if isinstance(payload_evidence, dict):
+        payload_evidence = [payload_evidence]
+    result: list[dict[str, Any]] = []
+    for item in payload_evidence:
+        result.append(
+            Evidence(
+                id=str(item.get("id") or new_id("evidence")),
+                observation_id=item.get("observation_id"),
+                candidate_id=str(item.get("candidate_id") or candidate.id),
+                supports=list(item.get("supports") or []),
+                opposes=list(item.get("opposes") or []),
+                strength=float(item.get("strength", 0.0)),
+                confidence=float(item.get("confidence", 1.0)),
+                reasons=list(item.get("reasons") or []),
+                metadata=dict(item.get("metadata") or {}),
+            ).to_dict()
+        )
+    return result
+
+
+def _feedback_acceptance_reliability(context: FunctionContext) -> dict[str, Any]:
+    feedback = context.report or {}
+    accepted = feedback.get("accepted")
+    decision = context.state.previous_decision or {}
+    selected_ids = decision.get("selected_candidate_ids") or []
+    selected_id = decision.get("selected_candidate_id")
+    if selected_id and selected_id not in selected_ids:
+        selected_ids.append(selected_id)
+    delta = float(context.config.get("accepted_delta", 0.02 if accepted else -0.05))
+    updates: dict[str, float] = {}
+    for source_id in selected_ids:
+        current = context.state.source_reliability.get(source_id, 1.0)
+        updates[source_id] = max(0.0, min(1.0, current + delta))
+    return {"reliability_updates": updates}
+
+
 def _require_candidate(context: FunctionContext) -> Candidate:
     if context.candidate is None:
         raise ValueError("provider requires a candidate")
@@ -111,6 +156,11 @@ def builtin_registry() -> FunctionRegistry:
     registry.register("observation.value", _observation_value, "signal_provider")
     registry.register("state.is_current", _state_is_current, "signal_provider")
     registry.register("always.pass", _always_pass, "constraint_predicate")
+    registry.register("evidence.payload", _payload_evidence, "evidence_builder")
     registry.register("postprocess.identity", _identity_postprocess, "postprocessor")
+    registry.register(
+        "feedback.acceptance_reliability",
+        _feedback_acceptance_reliability,
+        "feedback_handler",
+    )
     return registry
-

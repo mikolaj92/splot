@@ -26,6 +26,7 @@ class ModelTests(unittest.TestCase):
             observations=[observation.to_dict()],
             candidates=[candidate.to_dict()],
             evidence=[],
+            belief={"id": "belief_1"},
             evaluations=[],
             stability={},
             decision=decision.to_dict(),
