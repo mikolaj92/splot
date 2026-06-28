@@ -91,10 +91,11 @@ Implemented:
 - report audit and replay comparison helpers
 - import-free Fala-shaped adapter plus `splot-fala-step` process-runtime entrypoint
 
-Scaffolded:
+Boundaries:
 
-- Fala adapter returns Fala-shaped artifacts/events/gates, but does not call a
-  real Fala runtime API.
+- `splot-fala-step` returns a Fala-compatible `ProcessOutput` and uses Fala SDK
+  helpers when available. It does not own Fala scheduling, persistence, or
+  operator UI.
 - Profile YAML uses stdlib fallback parsing; if PyYAML is installed, Splot uses
   `yaml.safe_load`.
 - Built-in domain functions are intentionally generic. Real domains should
