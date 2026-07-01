@@ -14,6 +14,21 @@ Splot follows simple semantic versioning while the API stabilizes:
 - Hardened profile diagnostics, composition audit fields, Fala-shaped example,
   and documentation around providers, reports, YAML subset, security, and
   releases.
+- Aligned the Fala adapter with the archetypal Fala runtime: Carrier ->
+  candidate source and Observation -> observation input mapping, first-class
+  `observations` output, `splot.decision_committed` event, `splot.human_decision`
+  gate, dotted `splot.decision_report` / `splot.state` artifact kinds, a Fala
+  `{values, observations, artifacts, metadata}` step output using `fala.sdk` when
+  present, a manifest-step `splot-fala-step` entrypoint, an updated
+  carrier-package example, and a Fala/Splot boundary architecture note.
+- Declared Fala 0.1.0 as the integration baseline via an optional `fala` extra
+  (`pip install 'splot-runtime[fala]'`, resolving the `fala-runtime`
+  distribution); Splot stays standalone with `dependencies = []` and the
+  import-free fallback when the extra is absent.
+- Raised the minimum Python to 3.12 to match the Fala runtime (was 3.11).
+- Publish as the `splot-runtime` distribution (the PyPI name `splot` is an
+  unrelated PySAL package); the import package and console scripts stay
+  `splot` / `splot-fala-step`.
 
 ## 0.1.0
 

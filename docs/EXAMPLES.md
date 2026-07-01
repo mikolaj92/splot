@@ -41,11 +41,14 @@ PYTHONPATH=src python -m splot.cli examples run uncertainty
 
 Demonstrates close-score ambiguity producing `request_more_evidence`.
 
-## Fala-shaped stdio
+## Fala-shaped step
 
 ```bash
 splot-fala-step < examples/fala-integration/stdin.json
 ```
 
-Demonstrates how a Fala subprocess host could call Splot and receive a
-decision report artifact descriptor without Splot importing Fala.
+Maps a Fala-shaped input (carriers and observations) into a Splot round and
+returns a Fala step output: a `splot.decision_report` artifact, a
+`splot.decision_committed` event descriptor, and a `splot.human_decision` gate
+descriptor when the decision needs a human — without Splot importing Fala. See
+`docs/FALA_INTEGRATION.md`.

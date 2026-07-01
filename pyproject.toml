@@ -1,9 +1,12 @@
 [project]
-name = "splot"
+# Distribution name; the PyPI name `splot` is taken by an unrelated PySAL
+# package, so publish as `splot-runtime`. The import package and console
+# scripts stay `splot` / `splot-fala-step`.
+name = "splot-runtime"
 version = "0.1.0"
 description = "Generic information arbitration runtime."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "MIT"
 authors = [
   { name = "mikolaj92" }
@@ -14,12 +17,20 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3 :: Only",
   "Typing :: Typed",
 ]
+
+[project.optional-dependencies]
+# Splot stays standalone (dependencies = []); the real Fala runtime is optional.
+# `pip install 'splot-runtime[fala]'` pulls in the Fala runtime — published as the
+# `fala-runtime` distribution because the PyPI name `fala` is taken by an
+# unrelated package; the import name stays `fala`. It activates the fala.sdk-backed
+# manifest-step path in splot.adapters.fala. Without the extra, the import-free
+# fallback runs, so Splot never hard-depends on Fala.
+fala = ["fala-runtime>=0.1.0"]
 
 [project.urls]
 Homepage = "https://github.com/mikolaj92/splot"

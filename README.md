@@ -16,8 +16,11 @@ waves / observations -> evidence -> belief/state -> candidates
 -> arbitration -> stabilization -> decision -> feedback / trace
 ```
 
-The current package lives at `src/splot`. Fala integration is optional and is
-only a thin adapter in `splot.adapters.fala`.
+The current package lives at `src/splot`. Fala owns the information-flow
+runtime (Carrier, Observation, Artifact, Event, Process, Run, Gate, Projection,
+SQLite, filesystem artifacts); Splot owns arbitration. Fala integration is
+optional and is only a thin, import-free adapter in `splot.adapters.fala`. See
+`docs/FALA_INTEGRATION.md` for the archetype mapping.
 
 ## Quick Run
 
@@ -94,13 +97,14 @@ Implemented:
 - CLI for validate, decide, inspect, explain, report validate, HTML export,
   report redaction, weight explanation, replay, state init, and examples
 - report audit, report comparison, and replay comparison helpers
-- import-free Fala-shaped adapter plus `splot-fala-step` process-runtime entrypoint
+- import-free Fala adapter (Carrier/Observation/Artifact/Event/Gate mapping)
+  plus `splot-fala-step` process-runtime entrypoint
 
 Boundaries:
 
-- `splot-fala-step` returns a Fala-compatible `ProcessOutput` and uses Fala SDK
-  helpers when available. It does not own Fala scheduling, persistence, or
-  operator UI.
+- `splot-fala-step` returns a Fala step output
+  (`{values, observations, artifacts, metadata}`) and uses `fala.sdk` helpers
+  when available. It does not own Fala scheduling, persistence, or operator UI.
 - Profile YAML uses stdlib fallback parsing; if PyYAML is installed, Splot uses
   `yaml.safe_load`.
 - Built-in domain functions are intentionally generic. Real domains should
