@@ -12,9 +12,16 @@ runtime dependency of Splot: no server, Redis, Postgres, Kafka, or scheduler.
 - `fala-package.yaml` — a Fala carrier package that runs `splot-fala-step`
   as a `subprocess` capability and adds a `manual_gate` step for human review.
 
-The integration is built against **Fala 0.1.0** as its baseline. Fala is an
-optional extra (`pip install 'splot-runtime[fala]'`), never a hard dependency — the step
-below runs identically whether or not Fala is installed.
+The integration is built against **Fala 0.1.0** as its baseline. Fala is never a
+hard dependency of Splot. Install Splot first, and install Fala explicitly from
+GitHub only when the SDK-backed path is needed:
+
+```bash
+pip install splot-runtime
+pip install 'fala @ git+https://github.com/mikolaj92/Fala.git@0.1.0'
+```
+
+The step below runs identically whether or not Fala is installed.
 
 ## Run standalone (no Fala installed)
 
@@ -40,7 +47,7 @@ Splot maps the input and returns a Fala step output
 
 ## Under a real Fala host
 
-With Fala 0.1.0+ installed (`pip install 'splot-runtime[fala]'`), Fala writes the step
+With Fala 0.1.0+ installed explicitly from GitHub alongside Splot, Fala writes the step
 manifest to `FALA_STEP_MANIFEST`, runs `splot-fala-step`,
 reads `FALA_STEP_OUTPUT_DIR/result.json`, and persists the whole step-output blob
 as the process output. It does not, from a subprocess step, commit the returned

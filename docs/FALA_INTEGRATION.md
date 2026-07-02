@@ -49,19 +49,21 @@ produces and consumes their arbitration meaning.
 Fala is installed its `fala.sdk` helpers (`output`, `run_manifest_step`) are
 used; otherwise identical fallbacks run, so Splot stays standalone.
 
-The integration targets **Fala 0.1.0** as its baseline. Fala is an optional
-extra, not a hard dependency (`dependencies = []`):
+The integration targets **Fala 0.1.0** as its baseline. Fala SDK support is
+optional, not a hard dependency (`dependencies = []`). Public package indexes
+reject direct Git URL dependencies in published `Requires-Dist` metadata, so
+install Fala explicitly from GitHub when the SDK-backed path is needed:
 
 ```bash
-pip install splot-runtime         # standalone: import-free fallback path
-pip install 'splot-runtime[fala]' # pulls Fala 0.1.0+: fala.sdk-backed manifest step
+pip install splot-runtime
+pip install 'fala @ git+https://github.com/mikolaj92/Fala.git@0.1.0'
 ```
 
 Splot itself ships as the **`splot-runtime`** distribution (the PyPI name `splot`
 is an unrelated PySAL package); the import package and console scripts stay
-`splot` / `splot-fala-step`. The `[fala]` extra likewise resolves the
-**`fala-runtime`** distribution (the PyPI name `fala` is unrelated); its import
-name stays `import fala`.
+`splot` / `splot-fala-step`. The Fala runtime distribution name is **`fala`**,
+resolved from the `https://github.com/mikolaj92/Fala.git` `0.1.0` tag; its
+import name is `import fala`.
 
 ```python
 from splot.adapters.fala import arbitration_step
@@ -100,7 +102,7 @@ Fala-shaped `observations`, and returns host-agnostic descriptors:
 splot-fala-step < examples/fala-integration/stdin.json
 ```
 
-- With Fala 0.1.0+ installed (`pip install 'splot-runtime[fala]'`) it runs as a manifest
+- With Fala 0.1.0+ installed from GitHub alongside Splot, it runs as a manifest
   step: Fala writes the manifest to `FALA_STEP_MANIFEST`, Splot writes
   `FALA_STEP_OUTPUT_DIR/result.json`, and Fala commits the result. Steps never
   mutate SQLite directly.

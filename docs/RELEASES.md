@@ -14,3 +14,5 @@ Release hygiene checklist:
 3. Run `python -m unittest discover -s tests`.
 4. Run example CLI commands.
 5. Confirm report schemas still validate generated reports.
+6. Rebuild `dist/` from clean metadata and inspect wheel/sdist metadata:
+   `Requires-Dist` must stay empty, with no direct Git URL dependencies.
