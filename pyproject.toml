@@ -25,12 +25,17 @@ classifiers = [
 
 [project.optional-dependencies]
 # Splot stays standalone (dependencies = []); the real Fala runtime is optional.
-# `pip install 'splot-runtime[fala]'` pulls in the Fala runtime — published as the
-# `fala-runtime` distribution because the PyPI name `fala` is taken by an
-# unrelated package; the import name stays `fala`. It activates the fala.sdk-backed
-# manifest-step path in splot.adapters.fala. Without the extra, the import-free
-# fallback runs, so Splot never hard-depends on Fala.
-fala = ["fala-runtime>=0.1.0"]
+# Public indexes reject direct Git URL dependencies in package metadata, so the
+# published extra is dependency-free. Install Fala explicitly from GitHub when
+# the fala.sdk-backed manifest-step path in splot.adapters.fala is desired.
+# Without Fala installed, the import-free fallback runs, so Splot never
+# hard-depends on Fala.
+fala = []
+
+[dependency-groups]
+# Local/developer helper only; dependency groups are not published as wheel
+# Requires-Dist metadata.
+fala = ["fala @ git+https://github.com/mikolaj92/Fala.git@0.1.0"]
 
 [project.urls]
 Homepage = "https://github.com/mikolaj92/splot"
