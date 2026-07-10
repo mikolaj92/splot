@@ -4,7 +4,7 @@
 # scripts stay `splot` / `splot-fala-step`.
 name = "splot-runtime"
 version = "0.1.0"
-description = "Generic information arbitration runtime."
+description = "Cybernetic information arbitration runtime: many signals in, one minimized-entropy decision out."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -12,7 +12,7 @@ authors = [
   { name = "mikolaj92" }
 ]
 dependencies = []
-keywords = ["arbitration", "decision-support", "evidence", "runtime", "profiles"]
+keywords = ["arbitration", "cybernetics", "decision-support", "entropy", "evidence", "runtime", "profiles", "signals"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

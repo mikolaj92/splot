@@ -3,7 +3,12 @@
 ## Architecture note: two layers, one archetype
 
 Fala and Splot are complementary layers over the same information-flow
-archetype. Neither absorbs the other.
+archetype. Neither absorbs the other. Together they form one cybernetic
+mechanism in the tradition of Marian Mazur's cybernetics: Fala is the flow
+substrate — it carries, persists, schedules, and replays communicates between
+the system and its environment — while Splot is the correlator-and-homeostat
+organ that condenses many signals into one decision signal with minimized
+entropy. See `docs/CONCEPTUAL_MODEL.md` for the full theoretical mapping.
 
 - **Fala is the information-flow runtime.** It owns Carrier, Observation,
   Artifact, Event, Process, Run, Gate, and Projection, backed by an embedded

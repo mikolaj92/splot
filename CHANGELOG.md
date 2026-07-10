@@ -8,6 +8,11 @@ Splot follows simple semantic versioning while the API stabilizes:
 
 ## Unreleased
 
+- Documented the theoretical foundation: Splot is presented as a cybernetic
+  mechanism after Marian Mazur (qualitative theory of information, theory of
+  autonomous systems) — many signals in, one minimized-entropy decision signal
+  out — across the README, conceptual model, Fala integration note, package
+  docstring, and package metadata. No runtime behavior changed.
 - Added CI, license metadata, report/state/profile schemas, version and digest
   metadata, static HTML report export, report redaction, report comparison, and
   weight explanation helpers.

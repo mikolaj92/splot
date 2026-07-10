@@ -1,9 +1,12 @@
 # Splot
 
-Splot is a small, standalone information arbitration runtime. It takes many
-partial observations or candidate projections, scores them with registered
-functions, applies constraints and stability rules, and emits an explainable
-decision report.
+Splot is a small, standalone information arbitration runtime built as a
+cybernetic mechanism: it takes many partial, noisy, possibly conflicting
+signals and emits one decision signal with minimized entropy. Observations and
+candidate projections are scored with registered functions, filtered through
+constraints and stability rules, and committed as an explainable decision
+report that records the remaining uncertainty, the conflicts encountered, and
+why the winning decision was chosen.
 
 It is not a video director, legal merger, workflow engine, queue, streaming
 system, rules-language clone, or LLM agent framework. Domain work lives in
@@ -15,6 +18,31 @@ registered Python functions; profiles only reference safe function names.
 waves / observations -> evidence -> belief/state -> candidates
 -> arbitration -> stabilization -> decision -> feedback / trace
 ```
+
+## Theoretical Foundation
+
+Splot's research basis is the Polish school of cybernetics of Marian Mazur —
+the qualitative theory of information (*Jakościowa teoria informacji*, 1970)
+and the theory of autonomous systems (*Cybernetyczna teoria układów
+samodzielnych*, 1966). The name is the Polish word *splot*, an interweaving:
+many communicates in, one committed decision out, with the remaining
+uncertainty accounted for in the trace.
+
+Each pipeline stage plays a role from Mazur's model of a self-controlling
+system:
+
+| Splot stage                          | Cybernetic role                                        |
+| ------------------------------------ | ------------------------------------------------------ |
+| waves / observations                 | receptors: communicates from distorting carriers       |
+| evidence -> belief/state             | correlator: registering and correlating signals        |
+| candidates -> arbitration            | correlator: deriving the reaction                      |
+| constraints, verifiers, human-decision escalation | control in the system's own interest      |
+| stabilization (hysteresis, cooldown) | homeostat: functional equilibrium, no thrashing        |
+| decision -> feedback                 | effectors and feedback coupling                        |
+| trace (`DecisionReport`)             | the uncertainty accounting, made auditable             |
+
+This framing does not change how the code runs; it explains why the runtime is
+constructed the way it is. See `docs/CONCEPTUAL_MODEL.md` for the full mapping.
 
 The current package lives at `src/splot`. Fala owns the information-flow
 runtime (Carrier, Observation, Artifact, Event, Process, Run, Gate, Projection,

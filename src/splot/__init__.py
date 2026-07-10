@@ -1,4 +1,10 @@
-"""Splot's generic information arbitration runtime."""
+"""Splot: a cybernetic information arbitration runtime.
+
+Many partial, noisy, possibly conflicting signals in; one decision signal with
+minimized entropy out, plus a trace of the remaining uncertainty and why the
+decision won. The theoretical basis is Marian Mazur's cybernetics; see
+docs/CONCEPTUAL_MODEL.md.
+"""
 
 from .audit import ReportAuditFinding, audit_report, compare_replay, compare_reports
 from .errors import (
