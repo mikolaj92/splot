@@ -71,7 +71,3 @@ decision:
 postprocess:
   - provider: postprocess.identity
 
-explain:
-  include_section_sources: true
-  include_warnings: true
-  include_human_decisions: true

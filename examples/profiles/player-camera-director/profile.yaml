@@ -81,8 +81,3 @@ uncertainty:
 feedback_handlers:
   - provider: feedback.acceptance_reliability
 
-explain:
-  include_scores: true
-  include_rejected_candidates: true
-  include_constraints: true
-  include_stability: true
