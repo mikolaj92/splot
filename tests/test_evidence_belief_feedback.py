@@ -30,7 +30,6 @@ class EvidenceBeliefFeedbackTests(unittest.TestCase):
         self.assertTrue(report["evidence"])
         self.assertEqual(report["belief"]["candidate_beliefs"]["a"]["score"], 0.9)
         self.assertIn("last_belief", result.state.metadata)
-        self.assertTrue(result.state.evidence_history)
 
     def test_payload_evidence_provider_is_allowed(self):
         profile = {**BASE_PROFILE, "evidence": [{"provider": "evidence.payload"}]}

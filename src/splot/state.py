@@ -37,30 +37,6 @@ def update_state(
             {"decision_id": decision.id, "reason": decision.explanation},
             now,
         )
-    updated.candidate_history.append(
-        {
-            "at": now,
-            "decision_id": decision.id,
-            "selected_candidate_id": decision.selected_candidate_id,
-            "scores": {evaluation.candidate_id: evaluation.score for evaluation in evaluations},
-        }
-    )
-    if evidence:
-        updated.evidence_history.extend(
-            {
-                "at": now,
-                "decision_id": decision.id,
-                "evidence_id": item.id,
-                "candidate_id": item.candidate_id,
-                "supports": item.supports,
-                "opposes": item.opposes,
-                "strength": item.strength,
-                "confidence": item.confidence,
-                "reasons": item.reasons,
-            }
-            for item in evidence
-        )
-        updated.evidence_history = updated.evidence_history[-500:]
     if belief:
         updated.metadata["last_belief"] = belief.to_dict()
         updated.metadata["belief_history"] = belief.history

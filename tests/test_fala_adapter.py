@@ -27,7 +27,7 @@ class FalaMappingTests(unittest.TestCase):
         )
         self.assertEqual(candidate["id"], "camera_1")
         self.assertEqual(candidate["source_ids"], ["camera_1"])
-        self.assertEqual(candidate["kind"], "splot.wave")
+        self.assertEqual(candidate.get("metadata", {}).get("kind"), "splot.wave")
         self.assertEqual(candidate["payload"], {"visibility": 0.9})
 
     def test_fala_observation_maps_carrier_id_to_wave_id(self):

@@ -35,13 +35,13 @@ class JsonModel:
 @dataclass
 class Wave(JsonModel):
     id: str
-    kind: str = "generic"
     reliability: float = 1.0
     metadata: JsonDict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: JsonDict) -> "Wave":
-        return cls(**data)
+        allowed = {f.name for f in __import__("dataclasses").fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in allowed})
 
 
 
@@ -49,7 +49,6 @@ class Wave(JsonModel):
 class Observation(JsonModel):
     id: str
     wave_id: str | None = None
-    kind: str = "generic"
     observed_at: str | None = None
     window_start: str | None = None
     window_end: str | None = None
@@ -59,7 +58,8 @@ class Observation(JsonModel):
 
     @classmethod
     def from_dict(cls, data: JsonDict) -> "Observation":
-        return cls(**data)
+        allowed = {f.name for f in __import__("dataclasses").fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in allowed})
 
 
 @dataclass
@@ -96,7 +96,6 @@ class Belief(JsonModel):
 @dataclass
 class Candidate(JsonModel):
     id: str
-    kind: str = "generic"
     source_ids: list[str] = field(default_factory=list)
     payload: JsonDict = field(default_factory=dict)
     metadata: JsonDict = field(default_factory=dict)
@@ -106,7 +105,8 @@ class Candidate(JsonModel):
 
     @classmethod
     def from_dict(cls, data: JsonDict) -> "Candidate":
-        return cls(**data)
+        allowed = {f.name for f in __import__("dataclasses").fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in allowed})
 
 
 @dataclass
@@ -192,8 +192,6 @@ class SplotState(JsonModel):
     previous_decision: JsonDict | None = None
     last_decision_at: str | None = None
     last_switch_at: str | None = None
-    candidate_history: list[JsonDict] = field(default_factory=list)
-    evidence_history: list[JsonDict] = field(default_factory=list)
     source_reliability: dict[str, float] = field(default_factory=dict)
     unresolved_conflicts: list[JsonDict] = field(default_factory=list)
     open_human_decisions: list[str] = field(default_factory=list)
@@ -211,8 +209,6 @@ class SplotState(JsonModel):
             previous_decision=data.get("previous_decision"),
             last_decision_at=data.get("last_decision_at"),
             last_switch_at=data.get("last_switch_at"),
-            candidate_history=list(data.get("candidate_history") or []),
-            evidence_history=list(data.get("evidence_history") or []),
             source_reliability=dict(data.get("source_reliability") or {}),
             unresolved_conflicts=list(data.get("unresolved_conflicts") or []),
             open_human_decisions=list(data.get("open_human_decisions") or []),

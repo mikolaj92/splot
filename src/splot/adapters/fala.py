@@ -44,7 +44,6 @@ STATE_ARTIFACT = "splot.state"
 _OBSERVATION_FIELDS = {
     "id",
     "wave_id",
-    "kind",
     "observed_at",
     "window_start",
     "window_end",
@@ -59,27 +58,33 @@ _OBSERVATION_FIELDS = {
 
 def carrier_to_candidate(carrier: dict[str, Any]) -> dict[str, Any]:
     """Map a Fala carrier to a Splot candidate source."""
-
     carrier = dict(carrier)
     carrier_id = str(carrier.get("id") or carrier.get("carrier_id") or "carrier")
+    cand_kind = str(carrier.get("carrier_type") or carrier.get("kind") or "generic")
+    meta = dict(carrier.get("metadata") or {})
+    if "kind" not in meta:
+        meta["kind"] = cand_kind
     return {
         "id": carrier_id,
-        "kind": str(carrier.get("carrier_type") or carrier.get("kind") or "generic"),
         "source_ids": [carrier_id],
         "payload": dict(carrier.get("payload") or {}),
-        "metadata": dict(carrier.get("metadata") or {}),
+        "metadata": meta,
     }
 
 
 def fala_observation_to_splot(observation: dict[str, Any], index: int = 0) -> dict[str, Any]:
     """Map a Fala observation (``carrier_id``, ``kind``, ``values``) to Splot."""
-
     data = dict(observation)
     if "carrier_id" in data and "wave_id" not in data:
         data["wave_id"] = data.get("carrier_id")
     data["id"] = str(data.get("id") or f"observation_{index}")
-    return {key: value for key, value in data.items() if key in _OBSERVATION_FIELDS}
-
+    obs_kind = data.pop("kind", None) or data.get("carrier_type")
+    filtered = {key: value for key, value in data.items() if key in _OBSERVATION_FIELDS}
+    if obs_kind:
+        filtered.setdefault("metadata", {})
+        filtered["metadata"] = dict(filtered.get("metadata") or {})
+        filtered["metadata"].setdefault("kind", obs_kind)
+    return filtered
 
 def _as_observation(value: Any, index: int) -> Observation:
     if isinstance(value, Observation):
@@ -105,16 +110,11 @@ def _prepare_candidates(payload: dict[str, Any]) -> list[Candidate]:
         candidates = [carrier_to_candidate(dict(carrier)) for carrier in carriers]
     return [_as_candidate(item) for item in candidates]
 
-
-# --- Splot -> Fala output mapping -------------------------------------------
-
-
 def _fala_observations(observations: list[Observation], result: RoundResult) -> list[dict[str, Any]]:
     """Fala-shaped observations: passed-through readings plus the decision."""
-
     out: list[dict[str, Any]] = [
         {
-            "kind": observation.kind,
+            "kind": (observation.metadata or {}).get("kind", "generic"),
             "carrier_id": observation.wave_id,
             "values": observation.values,
             "confidence": observation.confidence,

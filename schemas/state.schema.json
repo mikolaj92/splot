@@ -6,8 +6,6 @@
   "required": [
     "state_schema_version",
     "session_id",
-    "candidate_history",
-    "evidence_history",
     "source_reliability",
     "unresolved_conflicts",
     "open_human_decisions",
@@ -21,8 +19,6 @@
     "previous_decision": {"type": ["object", "null"]},
     "last_decision_at": {"type": ["string", "null"]},
     "last_switch_at": {"type": ["string", "null"]},
-    "candidate_history": {"type": "array"},
-    "evidence_history": {"type": "array"},
     "source_reliability": {"type": "object"},
     "unresolved_conflicts": {"type": "array"},
     "open_human_decisions": {"type": "array"},
