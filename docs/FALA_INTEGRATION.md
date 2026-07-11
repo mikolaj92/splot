@@ -1,14 +1,14 @@
-# Fala Integration
+# Fala + Splot + Takt Integration
 
-## Architecture note: two layers, one archetype
+## Architecture note: three layers, one archetype
 
-Fala and Splot are complementary layers over the same information-flow
-archetype. Neither absorbs the other. Together they form one cybernetic
-mechanism in the tradition of Marian Mazur's cybernetics: Fala is the flow
-substrate — it carries, persists, schedules, and replays communicates between
-the system and its environment — while Splot is the correlator-and-homeostat
-organ that condenses many signals into one decision signal with minimized
-entropy. See `docs/CONCEPTUAL_MODEL.md` for the full theoretical mapping.
+Fala, Splot and Takt are complementary layers over the same information-flow archetype in the tradition of Marian Mazur and Józef Kossecki.
+
+- **Fala** is the flow substrate (impulses, correlation paths, homeostats, projections). It carries, persists, schedules, and replays communicates.
+- **Splot** is the correlator-and-homeostat organ: many signals → one minimized-entropy decision (Mazur, *Jakościowa teoria informacji* 1970).
+- **Takt** is the hierarchical regulator (kaskada): n-layer CascadeRegulator over Fala paths, with descending constraints and ascending telemetry (Kossecki: wielopoziomowe układy samodzielne; Mazur: fala zstępująca / wstępująca).
+
+See `docs/CONCEPTUAL_MODEL.md` (Splot) and Fala's `docs/CYBERNETIC_MAPPING.md` + `docs/CONCEPTUAL_MODEL.md` for the mappings. Takt depends on Fala as transport and may use Splot as its optional fusion reducer.
 
 - **Fala is the information-flow runtime.** It owns Carrier, Observation,
   Artifact, Event, Process, Run, Gate, and Projection, backed by an embedded
@@ -35,23 +35,22 @@ domain events on its own.
 
 ## Archetype mapping
 
-| Fala runtime object     | Splot arbitration meaning                  |
-| ----------------------- | ------------------------------------------ |
-| Carrier                 | Wave / candidate source                    |
-| Observation             | Observation                                |
-| Artifact                | `decision_report` / `state` output         |
-| Event                   | `splot.decision_committed`                 |
-| Gate                    | human decision requirement                 |
-| Projection              | decision history / current arbitration state |
-| RuntimeRef              | another wave / runtime source              |
+| Fala runtime object     | Splot arbitration meaning                  | Takt (kaskada) role |
+| ----------------------- | ------------------------------------------ | ------------------- |
+| Carrier                 | Wave / candidate source                    | descending constraint carrier (fala zstępująca) |
+| Observation             | Observation                                | RawSignal input to fusion (deviation, confidence) |
+| Artifact                | `decision_report` / `state` output         | ErrorSignal + contributing signals (trace) |
+| Event                   | `splot.decision_committed`                 | Actuation or SafetyInterlock emission |
+| Gate / Homeostat        | human decision requirement                 | ProfilHomeostatyczny threshold + Interlock |
+| Projection              | decision history / current arbitration state | StateNode tree + sequential_scan |
+| CorrelationPath / conduction | wave flow (up/down)                     | vertical propagation of constraints and telemetry (Mazur) |
+| (runtime facade)        | correlator + homeostat                     | CascadeRegulator (n-layer, Kossecki) |
 
-Fala owns persistence, scheduling, and replay of these objects. Splot only
-produces and consumes their arbitration meaning.
+Fala owns persistence, scheduling, and replay of these objects. Splot provides the entropy-reducing arbitration step. Takt supplies the hierarchical orchestration (descending waves from ProfilHomeostatyczny, ascending aggregated ErrorSignals) over Fala conduction, optionally using Splot for fusion.
 
 ## Import-free adapter
 
-`splot.adapters.fala` maps between the two layers without importing Fala. When
-Fala is installed its `fala.sdk` helpers (`output`, `run_manifest_step`) are
+`splot.adapters.fala` maps between the layers without importing Fala. When
 used; otherwise identical fallbacks run, so Splot stays standalone.
 
 The integration targets **Fala 0.1.0** as its baseline. Fala SDK support is

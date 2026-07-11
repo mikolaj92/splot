@@ -44,11 +44,7 @@ system:
 This framing does not change how the code runs; it explains why the runtime is
 constructed the way it is. See `docs/CONCEPTUAL_MODEL.md` for the full mapping.
 
-The current package lives at `src/splot`. Fala owns the information-flow
-runtime (Carrier, Observation, Artifact, Event, Process, Run, Gate, Projection,
-SQLite, filesystem artifacts); Splot owns arbitration. Fala integration is
-optional and is only a thin, import-free adapter in `splot.adapters.fala`. See
-`docs/FALA_INTEGRATION.md` for the archetype mapping.
+The current package lives at `src/splot`. Fala owns the information-flow runtime (Carrier, Observation, Artifact, Event, Process, Run, Gate, Projection, SQLite, filesystem artifacts); Splot owns arbitration; Takt supplies n-layer hierarchical regulation (CascadeRegulator) over Fala conduction, optionally using Splot for entropy-reducing fusion. See `docs/FALA_INTEGRATION.md` for the full archetype mapping (Fala + Splot + Takt) with citations to Mazur (*Jakościowa teoria informacji* 1970, *Cybernetyczna teoria układów samodzielnych* 1966) and Kossecki (wielopoziomowe układy samodzielne). Fala integration is optional and is only a thin, import-free adapter in `splot.adapters.fala`.
 
 ## Quick Run
 

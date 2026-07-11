@@ -3,7 +3,7 @@
 # package, so publish as `splot-runtime`. The import package and console
 # scripts stay `splot` / `splot-fala-step`.
 name = "splot-runtime"
-version = "0.2.0"
+version = "0.2.1"
 description = "Cybernetic information arbitration runtime: many signals in, one minimized-entropy decision out."
 readme = "README.md"
 requires-python = ">=3.12"
