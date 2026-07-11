@@ -6,7 +6,7 @@ Splot follows simple semantic versioning while the API stabilizes:
 - minor: backward-compatible profile, CLI, or report additions
 - major: breaking changes to public models, CLI, or report schema
 
-## Unreleased
+## 0.2.0
 
 - Entropy-minimization pass across the arbitration pipeline (in the cybernetic
   tradition Splot builds on; still counting and spread only, no probability
