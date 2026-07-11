@@ -15,8 +15,9 @@ def render_html_report(report: dict[str, Any], *, redact: bool = False, fields: 
     human = "".join(f"<li>{_e(item)}</li>" for item in data.get("human_decisions") or [])
     warnings = "".join(f"<li>{_e(item)}</li>" for item in data.get("warnings") or [])
     rejected = "".join(
-        f"<li>{_e(item.get('candidate_id'))}: {_e(', '.join(item.get('reasons') or []))}</li>"
-        for item in decision.get("rejected_candidates") or []
+        f"<li>{_e(item.get('candidate_id'))}: {_e(', '.join(item.get('rejected_reasons') or []))}</li>"
+        for item in data.get("evaluations") or []
+        if item.get("rejected_reasons")
     )
     return f"""<!doctype html>
 <html lang="en">

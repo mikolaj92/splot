@@ -29,15 +29,10 @@ def decide_from_evaluations(
     decision_config = profile.get("decision") or {}
     policy = str(decision_config.get("policy", "constrained_weighted_score"))
     eligible = list(evaluations) if policy == "weighted_score" else [item for item in evaluations if item.eligible]
-    rejected = [
-        {"candidate_id": item.candidate_id, "reasons": item.rejected_reasons}
-        for item in evaluations
-        if item.rejected_reasons
-    ]
 
     if not evaluations:
         return _uncertain_decision(
-            profile, "when_no_candidate", objective_id, previous, now, rejected, "no candidates"
+            profile, "when_no_candidate", objective_id, previous, now, "no candidates"
         )
     if not eligible:
         return _uncertain_decision(
@@ -46,7 +41,6 @@ def decide_from_evaluations(
             objective_id,
             previous,
             now,
-            rejected,
             "all candidates blocked",
         )
 
@@ -85,11 +79,9 @@ def decide_from_evaluations(
                 objective_id,
                 previous,
                 now,
-                rejected,
                 f"top candidates are close: margin {margin:.3f}",
                 behavior_override=behavior,
             )
-
     if best.human_decisions:
         candidate = _candidate_by_id(candidates, best.candidate_id)
         return Decision(
@@ -98,19 +90,15 @@ def decide_from_evaluations(
             objective_id=objective_id,
             selected_candidate_id=best.candidate_id,
             selected_candidate_ids=[best.candidate_id],
-            previous_decision_id=previous.get("id"),
             action=_action_for_candidate(profile, candidate),
             confidence=best.score,
             uncertainty=1.0 - best.score,
             policy_reason="candidate_requires_human_decision",
             explanation="best candidate requires human input",
-            rejected_candidates=rejected,
             warnings=best.warnings,
             required_human_inputs=best.human_decisions,
-            created_at=now,
             metadata={"selected_source_ids": _candidate_source_ids(candidate)},
         )
-
     candidate = _candidate_by_id(candidates, best.candidate_id)
     status = _status_for_mode(profile, candidate)
     return Decision(
@@ -119,15 +107,12 @@ def decide_from_evaluations(
         objective_id=objective_id,
         selected_candidate_id=best.candidate_id,
         selected_candidate_ids=[best.candidate_id],
-        previous_decision_id=previous.get("id"),
         action=_action_for_candidate(profile, candidate),
         confidence=best.score,
         uncertainty=max(0.0, min(1.0, 1.0 - best.score)),
         policy_reason=f"{policy}_selected_highest_score",
         explanation=f"selected {best.candidate_id} with score {best.score:.3f}",
-        rejected_candidates=rejected,
         warnings=best.warnings,
-        created_at=now,
         metadata={
             "score_margin": margin,
             "second_candidate_id": second.candidate_id if second else None,
@@ -135,14 +120,12 @@ def decide_from_evaluations(
         },
     )
 
-
 def _uncertain_decision(
     profile: dict[str, Any],
     behavior_key: str,
     objective_id: str,
     previous: dict[str, Any],
     now: str,
-    rejected: list[dict[str, Any]],
     reason: str,
     behavior_override: str | None = None,
 ) -> Decision:
@@ -155,17 +138,12 @@ def _uncertain_decision(
         status=status,
         objective_id=objective_id,
         selected_candidate_id=None,
-        previous_decision_id=previous.get("id"),
         confidence=0.0,
         uncertainty=1.0,
         policy_reason=f"{behavior_key}:{behavior}",
         explanation=reason,
-        rejected_candidates=rejected,
         warnings=[reason],
-        created_at=now,
     )
-
-
 def _uncertainty_behavior(profile: dict[str, Any], key: str, default: str) -> str:
     return str((profile.get("uncertainty") or {}).get(key, default))
 
@@ -185,13 +163,11 @@ def _keep_previous(
         objective_id=objective_id,
         selected_candidate_id=previous_id,
         selected_candidate_ids=previous_ids,
-        previous_decision_id=previous.get("id"),
         action=previous.get("action"),
         confidence=confidence,
         uncertainty=max(0.0, min(1.0, 1.0 - confidence)),
         policy_reason=reason,
         explanation=f"kept previous candidate {previous_id}: {reason}",
-        created_at=now,
         metadata={"selected_source_ids": _previous_source_ids(previous)},
     )
 

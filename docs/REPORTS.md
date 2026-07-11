@@ -19,15 +19,14 @@ Remaining uncertainty is accounted for by name, never hidden:
 - `uncertainty.value` is the maximum of named `components` (`score_residual`,
   `close_margin_gap`, `evidence_confidence_gap`, `source_reliability_gap`,
   `decision`, ...); `dominant_component` names the biggest one
-- `conflicts` (close scores, contested candidates, blocked candidates) also
-  persist in state across rounds, deduplicated, until they stop recurring
+- `conflicts` (close scores, contested candidates, blocked candidates) are computed live per round in belief and surfaced under `uncertainty.conflicts` (and `belief.conflicts`); they are not stored as history in state. State holds only continuity needed for the next entropy-reduction step: previous decision, stability memory, source reliability.
 - `stale_sources` lists sources flagged stale; `silent_sources` lists declared
   waves that sent no observation this round
 - `reduction` appears when the same candidate stayed on top across rounds and
   earned an explicit, recorded uncertainty reduction
 - per-candidate belief carries `support`, `opposition`, `input_disagreement`,
   and `rounds_seen`, `source_reliability` (per-source trust from feedback),
-  and `stale_sources` (source IDs whose observations exceeded `max_age_seconds`)# Context pack
+  and `stale_sources` (source IDs whose observations exceeded `max_age_seconds`)
 
 `build_context_pack` (or `splot context-pack report.json`) condenses a report
 into one deterministic, LLM-ready JSON signal: provenance, decision,

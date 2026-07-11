@@ -122,17 +122,14 @@ def decide_composition(
         objective_id=objective_id,
         selected_candidate_id=None,
         selected_candidate_ids=selected_ids,
-        previous_decision_id=previous.get("id"),
         action={"type": "compose", "plan": plan},
         confidence=confidence,
         uncertainty=1.0 - confidence,
         policy_reason="section_by_section_composition",
         explanation=f"selected {len(selected_ids)} composition parts",
-        rejected_candidates=rejected,
         warnings=warnings + [f"missing required section: {item}" for item in missing_required],
         required_human_inputs=human_decisions
         + [f"missing required section: {item}" for item in missing_required],
-        created_at=now,
         metadata={"selected_source_ids": selected_source_ids},
     )
     return decision, {"policy": "section_by_section_composition", "decision": status, **plan}

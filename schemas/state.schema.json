@@ -2,26 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/mikolaj92/splot/schemas/state.schema.json",
   "title": "Splot State",
-  "type": "object",
   "required": [
     "state_schema_version",
     "session_id",
     "source_reliability",
-    "unresolved_conflicts",
-    "open_human_decisions",
     "stability_memory",
     "metadata"
   ],
   "properties": {
     "state_schema_version": {"type": "integer"},
     "session_id": {"type": "string"},
-    "objective_id": {"type": ["string", "null"]},
     "previous_decision": {"type": ["object", "null"]},
     "last_decision_at": {"type": ["string", "null"]},
     "last_switch_at": {"type": ["string", "null"]},
     "source_reliability": {"type": "object"},
-    "unresolved_conflicts": {"type": "array"},
-    "open_human_decisions": {"type": "array"},
     "stability_memory": {"type": "object"},
     "metadata": {"type": "object"}
   }

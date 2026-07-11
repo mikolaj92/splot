@@ -246,7 +246,7 @@ class EvidenceBeliefFeedbackTests(unittest.TestCase):
 
         self.assertFalse([item for item in conflicts if item["kind"] == "contested_candidate"])
 
-    def test_unresolved_conflicts_persist_across_rounds(self):
+    def test_conflicts_surface_in_belief_and_persist_across_rounds(self):
         close_candidates = [
             {"id": "a", "payload": {"score": 0.9}},
             {"id": "b", "payload": {"score": 0.89}},
@@ -257,7 +257,7 @@ class EvidenceBeliefFeedbackTests(unittest.TestCase):
             now="2026-06-28T12:00:00+00:00",
         )
         self.assertTrue(
-            [item for item in first.state.unresolved_conflicts if item["kind"] == "close_scores"]
+            [item for item in first.report.belief["conflicts"] if item["kind"] == "close_scores"]
         )
 
         repeat = run_round(
@@ -266,21 +266,22 @@ class EvidenceBeliefFeedbackTests(unittest.TestCase):
             previous_state=first.state,
             now="2026-06-28T12:01:00+00:00",
         )
-        close = [item for item in repeat.state.unresolved_conflicts if item["kind"] == "close_scores"]
+        close = [item for item in repeat.report.belief["conflicts"] if item["kind"] == "close_scores"]
         self.assertEqual(len(close), 1)
-        self.assertEqual(close[0]["at"], "2026-06-28T12:00:00+00:00")
+        self.assertEqual(close[0]["score_margin"], 0.01)
 
+        # Conflicts reflect current uncertainty conditions computed in belief each round.
+        # They are not stored as history inside state (state holds only continuity for the next reduction step).
+        # When conditions resolve, the next round produces an empty conflicts list for that kind.
         clear_round = run_round(
             BASE_PROFILE,
             candidates=[{"id": "a", "payload": {"score": 1}}],
             previous_state=repeat.state,
             now="2026-06-28T12:02:00+00:00",
         )
-        self.assertTrue(
-            [item for item in clear_round.state.unresolved_conflicts if item["kind"] == "close_scores"]
+        self.assertFalse(
+            [item for item in clear_round.report.belief["conflicts"] if item["kind"] == "close_scores"]
         )
-
-    def test_rounds_seen_and_history_accumulate_across_rounds(self):
         candidates = [{"id": "a", "payload": {"score": 0.9}}]
         first = run_round(BASE_PROFILE, candidates=candidates, now="2026-06-28T12:00:00+00:00")
         second = run_round(

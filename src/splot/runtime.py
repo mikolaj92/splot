@@ -56,7 +56,6 @@ def run_round(
     validate_profile(loaded_profile, registry=registry)
     now_text = _now_text(now)
     state = previous_state if isinstance(previous_state, SplotState) else SplotState.from_dict(previous_state)
-    state.objective_id = loaded_profile.objective_id
     previous_state_snapshot = state.to_dict()
     feedback = apply_feedback_handlers(loaded_profile.raw, feedback, state, registry, now_text)
     observation_models = [_observation(item) for item in observations or []]
@@ -414,13 +413,11 @@ def _stale_source_decision(
         id=new_id("decision"),
         status="request_more_evidence",
         objective_id=str((profile.get("objective") or {}).get("id", profile.get("id", ""))),
-        previous_decision_id=previous.get("id"),
         confidence=0.0,
         uncertainty=1.0,
         policy_reason="when_source_stale:request_more_evidence",
         explanation=f"stale sources present: {', '.join(stale_sources)}",
         warnings=[f"stale sources present: {', '.join(stale_sources)}"],
-        created_at=now,
     )
 
 

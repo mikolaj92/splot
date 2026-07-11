@@ -199,9 +199,9 @@ def _explain(args: argparse.Namespace) -> int:
     stability = report.get("stability") or {}
     if stability:
         print(f"stability: {stability.get('decision')} ({stability.get('policy')})")
-    rejected = report.get("decision", {}).get("rejected_candidates") or []
-    for item in rejected:
-        print(f"rejected {item.get('candidate_id')}: {', '.join(item.get('reasons') or [])}")
+    for ev in report.get("evaluations") or []:
+        if ev.get("rejected_reasons"):
+            print(f"rejected {ev.get('candidate_id')}: {', '.join(ev.get('rejected_reasons') or [])}")
     uncertainty = report.get("uncertainty") or {}
     if uncertainty.get("conflicts"):
         print(f"conflicts: {len(uncertainty['conflicts'])}")

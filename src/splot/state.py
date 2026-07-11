@@ -30,19 +30,9 @@ def update_state(
                 updated.stability_memory.pop(key, None)
             else:
                 updated.stability_memory[key] = value
-    updated.open_human_decisions = list(decision.required_human_inputs)
-    if decision.status in {"conflict", "request_more_evidence"}:
-        _remember_conflict(
-            updated.unresolved_conflicts,
-            {"decision_id": decision.id, "reason": decision.explanation},
-            now,
-        )
     if belief:
         updated.metadata["last_belief"] = belief.to_dict()
         updated.metadata["belief_history"] = belief.history
-        for conflict in belief.conflicts:
-            _remember_conflict(updated.unresolved_conflicts, conflict, now)
-        updated.unresolved_conflicts = updated.unresolved_conflicts[-50:]
     if feedback:
         updated.metadata.setdefault("feedback", []).append(deepcopy(feedback))
         if feedback.get("state_updates"):
@@ -53,20 +43,6 @@ def update_state(
             updated.source_reliability[sid] = max(0.0, min(1.0, float(val)))
     return updated
 
-
-def _remember_conflict(conflicts: list[dict[str, Any]], entry: dict[str, Any], now: str) -> None:
-    key = _conflict_key(entry)
-    if any(_conflict_key(item) == key for item in conflicts):
-        return
-    conflicts.append({**entry, "at": now})
-
-
-def _conflict_key(conflict: dict[str, Any]) -> str:
-    # "at" and "decision_id" vary per round; the rest identifies the conflict.
-    payload = {key: value for key, value in conflict.items() if key not in {"at", "decision_id"}}
-    return json.dumps(payload, sort_keys=True, default=str)
-
-
 def load_state_file(path: str | Path | None) -> SplotState:
     if path is None:
         return SplotState()
@@ -74,7 +50,6 @@ def load_state_file(path: str | Path | None) -> SplotState:
     if not state_path.exists():
         return SplotState()
     return SplotState.from_dict(json.loads(state_path.read_text(encoding="utf-8")))
-
 
 def write_state_file(path: str | Path, state: SplotState) -> None:
     Path(path).write_text(json.dumps(state.to_dict(), indent=2, sort_keys=True), encoding="utf-8")

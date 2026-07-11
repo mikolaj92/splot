@@ -159,20 +159,14 @@ class Decision(JsonModel):
     objective_id: str
     selected_candidate_id: str | None = None
     selected_candidate_ids: list[str] = field(default_factory=list)
-    previous_decision_id: str | None = None
     action: JsonDict | None = None
     confidence: float = 0.0
     uncertainty: float = 1.0
     policy_reason: str = ""
     explanation: str = ""
-    evaluations: list[JsonDict] = field(default_factory=list)
-    rejected_candidates: list[JsonDict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     required_human_inputs: list[str] = field(default_factory=list)
-    created_at: str | None = None
     metadata: JsonDict = field(default_factory=dict)
-
-
 @dataclass
 class Feedback(JsonModel):
     decision_id: str
@@ -188,13 +182,10 @@ class Feedback(JsonModel):
 class SplotState(JsonModel):
     state_schema_version: int = STATE_SCHEMA_VERSION
     session_id: str = field(default_factory=lambda: new_id("session"))
-    objective_id: str | None = None
     previous_decision: JsonDict | None = None
     last_decision_at: str | None = None
     last_switch_at: str | None = None
     source_reliability: dict[str, float] = field(default_factory=dict)
-    unresolved_conflicts: list[JsonDict] = field(default_factory=list)
-    open_human_decisions: list[str] = field(default_factory=list)
     stability_memory: JsonDict = field(default_factory=dict)
     metadata: JsonDict = field(default_factory=dict)
 
@@ -205,13 +196,10 @@ class SplotState(JsonModel):
         return cls(
             state_schema_version=int(data.get("state_schema_version", STATE_SCHEMA_VERSION)),
             session_id=data.get("session_id") or new_id("session"),
-            objective_id=data.get("objective_id"),
             previous_decision=data.get("previous_decision"),
             last_decision_at=data.get("last_decision_at"),
             last_switch_at=data.get("last_switch_at"),
             source_reliability=dict(data.get("source_reliability") or {}),
-            unresolved_conflicts=list(data.get("unresolved_conflicts") or []),
-            open_human_decisions=list(data.get("open_human_decisions") or []),
             stability_memory=dict(data.get("stability_memory") or {}),
             metadata=dict(data.get("metadata") or {}),
         )
