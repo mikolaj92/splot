@@ -20,19 +20,21 @@ vocabulary for everything else.)
 
 This is why the runtime is constructed the way it is:
 
-- **Waves and projections** come from Mazur's communication chain: a channel
-  (tor) transmits communicates, not the original itself — transmission may
-  preserve, lose, or distort. Splot therefore models sources as waves with
-  explicit projections instead of trusting inputs as ground truth.
+- **Waves** carry communicates. Distortion (loss, noise, bias) is first-class:
+  Splot tracks it via wave `reliability`, per-signal `confidence`, `stale_sources`,
+  disagreement on `reduce`, source reliability feedback, and explicit conflicts
+  in belief. Splot core does not define a `Projection` type — that is a
+  carrier-layer concern (Fala).
 - **Evidence and belief** are the correlator (korelator) of an autonomous
   system: incoming communicates are registered, correlated against each other
   and against history, and condensed into a belief state with explicit
   uncertainty, conflicts, and reliability.
-- **Reliability, stale sources, and redaction** exist because Mazur's
-  information theory treats distortion as first-class: communicates can
-  transinform (faithfully), pseudo-inform, or disinform. A mechanism that
-  arbitrates signals must track how much each source can be trusted, not only
-  what it says.
+- **Reliability and stale sources** exist because Mazur's information theory
+  treats distortion as first-class: communicates can transinform (faithfully),
+  pseudo-inform, or disinform. A mechanism that arbitrates signals must track
+  how much each source can be trusted, not only what it says. Redaction is
+  separate: it protects the audit trace (DecisionReport) from leaking sensitive
+  values when the trace is exported or fed to other systems.
 - **Constraints, verifiers, and human-decision escalation** implement control
   in the system's own interest: an autonomous system (układ samodzielny) does
   not merely react — it protects itself. Blocking, warning, penalizing, and
@@ -57,7 +59,6 @@ stage rather than treating the pipeline as arbitrary structure.
 ## Concepts
 
 - Wave: a source or carrier of partial information.
-- Projection: what a wave preserves, loses, or distorts.
 - Observation: a concrete reading, fragment, event, or metric.
 - Evidence: interpreted support for or against a candidate.
 - Belief: current state, uncertainty, history, and reliability.

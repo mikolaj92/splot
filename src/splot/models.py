@@ -36,26 +36,13 @@ class JsonModel:
 class Wave(JsonModel):
     id: str
     kind: str = "generic"
-    domain: str | None = None
     reliability: float = 1.0
-    latency_ms: int | None = None
-    cost: float | None = None
-    known_biases: list[str] = field(default_factory=list)
     metadata: JsonDict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: JsonDict) -> "Wave":
         return cls(**data)
 
-
-@dataclass
-class Projection(JsonModel):
-    wave_id: str
-    observes: list[str] = field(default_factory=list)
-    loses: list[str] = field(default_factory=list)
-    biases: list[str] = field(default_factory=list)
-    confidence_hint: float | None = None
-    metadata: JsonDict = field(default_factory=dict)
 
 
 @dataclass
@@ -114,9 +101,7 @@ class Candidate(JsonModel):
     payload: JsonDict = field(default_factory=dict)
     metadata: JsonDict = field(default_factory=dict)
     proposed_action: str | None = None
-    expected_gain: float | None = None
     switching_cost: float = 0.0
-    risk: float | None = None
     dependencies: list[str] = field(default_factory=list)
 
     @classmethod
