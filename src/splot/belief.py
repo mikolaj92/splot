@@ -20,6 +20,7 @@ def build_belief(
     source_reliability = source_reliability_map(profile, candidates, state)
     belief_config = profile.get("belief") or {}
     smoothing = float(belief_config.get("smoothing", 0.0))
+    smoothing_active = False
     previous = (state.metadata or {}).get("last_belief") or {}
     previous_beliefs = previous.get("candidate_beliefs") or {}
     candidates_by_id = {candidate.id: candidate for candidate in candidates}
@@ -30,6 +31,7 @@ def build_belief(
         opposition = sum(item.strength * item.confidence for item in items if item.opposes)
         prior = previous_beliefs.get(evaluation.candidate_id) or {}
         if smoothing and prior:
+            smoothing_active = True
             support = smoothing * float(prior.get("support") or 0.0) + (1.0 - smoothing) * support
             opposition = (
                 smoothing * float(prior.get("opposition") or 0.0) + (1.0 - smoothing) * opposition
@@ -61,6 +63,7 @@ def build_belief(
 
     components, conflicts = _uncertainty_components(profile, evaluations, candidate_beliefs)
     uncertainty = max(components.values())
+    component_count = sum(1 for v in components.values() if v > 0)
     top_candidate_id, winner_streak, reduction = _winner_stability(
         belief_config, evaluations, previous
     )
@@ -92,8 +95,9 @@ def build_belief(
             "created_at": now,
             "observation_count": len(observations),
             "candidate_count": len(candidates),
-            "evidence_count": len(evidence),
             "uncertainty_components": {key: round(value, 6) for key, value in components.items()},
+            "uncertainty_component_count": component_count,
+            "smoothing_active": smoothing_active,
             "top_candidate_id": top_candidate_id,
             "winner_streak": winner_streak,
             **(

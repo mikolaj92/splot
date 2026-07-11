@@ -64,6 +64,7 @@ def evaluate_candidate(
         if not result.passed:
             rejected_reasons.append(result.reason)
 
+    rejected_reasons = list(dict.fromkeys(rejected_reasons))
     return CandidateEvaluation(
         candidate_id=candidate.id,
         eligible=not rejected_reasons,
@@ -107,6 +108,10 @@ def _score_candidate(
         if isinstance(provided, dict):
             return max(0.0, min(1.0, float(provided.get("score", 0.0))))
         return max(0.0, min(1.0, float(provided)))
+    use_confidence = bool(scoring.get("use_signal_confidence"))
+    if use_confidence:
+        total_weight = sum(signal.weight * signal.confidence for signal in signals)
+        return sum(signal.normalized * signal.weight * signal.confidence for signal in signals) / total_weight if total_weight else 0.0
     total_weight = sum(signal.weight for signal in signals)
     return sum(signal.contribution for signal in signals) / total_weight if total_weight else 0.0
 

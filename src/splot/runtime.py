@@ -115,11 +115,14 @@ def run_round(
                 "decision": decision.status,
                 "stale_sources": stale_sources,
             }
+            stability_updates = {}
         else:
-            decision, stability_analysis = decide_composition(
+            proposed, stability_analysis = decide_composition(
                 loaded_profile.raw, candidate_models, evaluations, state, now_text
             )
-        stability_updates: dict[str, Any] = {}
+            decision, stability_analysis, stability_updates = apply_stability(
+                loaded_profile.raw, candidate_models, evaluations, state, proposed, now_text
+            )
     else:
         stale_decision = _stale_source_decision(loaded_profile.raw, stale_sources, state, now_text)
         if stale_decision:
@@ -282,6 +285,7 @@ def _build_report(
         warnings.extend(evaluation.warnings)
     components = dict((belief.metadata or {}).get("uncertainty_components") or {})
     components["decision"] = decision.uncertainty
+    component_count = sum(1 for v in components.values() if v > 0)
     reduction = (belief.metadata or {}).get("uncertainty_reduction") or {}
     # The reported value is the largest named component minus the recorded
     # reduction, so no uncertainty exists outside the components table.
@@ -313,6 +317,7 @@ def _build_report(
             "decision_uncertainty": decision.uncertainty,
             "belief_uncertainty": belief.uncertainty,
             "components": components,
+            "component_count": component_count,
             "dominant_component": max(components, key=components.get),
             "conflicts": belief.conflicts,
             "stale_sources": belief.stale_sources,

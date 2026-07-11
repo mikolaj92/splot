@@ -21,28 +21,34 @@ def apply_constraints(
 
     for signal_config in profile.get("signals") or []:
         signal = signal_by_id[str(signal_config["id"])]
+        sig_severity = str(signal_config.get("severity", "block"))
+        sig_penalty = float(signal_config.get("penalty", 0.0)) if sig_severity == "penalize" else 0.0
         if "min" in signal_config and signal.normalized < float(signal_config["min"]):
+            penalty = sig_penalty
             results.append(
                 ConstraintResult(
                     id=f"{signal.id}.min",
-                    severity="block",
+                    severity=sig_severity,
                     passed=False,
                     reason=(
                         f"signal {signal.id} normalized value {signal.normalized:.3f} "
                         f"< min {float(signal_config['min']):.3f}"
                     ),
+                    penalty=penalty,
                 )
             )
         if "max" in signal_config and signal.normalized > float(signal_config["max"]):
+            penalty = sig_penalty
             results.append(
                 ConstraintResult(
                     id=f"{signal.id}.max",
-                    severity="block",
+                    severity=sig_severity,
                     passed=False,
                     reason=(
                         f"signal {signal.id} normalized value {signal.normalized:.3f} "
                         f"> max {float(signal_config['max']):.3f}"
                     ),
+                    penalty=penalty,
                 )
             )
 

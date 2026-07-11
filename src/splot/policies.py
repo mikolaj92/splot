@@ -178,12 +178,13 @@ def _keep_previous(
     reason: str,
 ) -> Decision:
     previous_id = previous.get("selected_candidate_id")
+    previous_ids = previous.get("selected_candidate_ids") or ([previous_id] if previous_id else [])
     return Decision(
         id=new_id("decision"),
         status="kept_previous",
         objective_id=objective_id,
         selected_candidate_id=previous_id,
-        selected_candidate_ids=[previous_id] if previous_id else [],
+        selected_candidate_ids=previous_ids,
         previous_decision_id=previous.get("id"),
         action=previous.get("action"),
         confidence=confidence,

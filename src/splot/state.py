@@ -73,7 +73,8 @@ def update_state(
             updated.metadata.setdefault("feedback_state_updates", []).append(
                 deepcopy(feedback["state_updates"])
             )
-        updated.source_reliability.update(feedback.get("reliability_updates") or {})
+        for sid, val in (feedback.get("reliability_updates") or {}).items():
+            updated.source_reliability[sid] = max(0.0, min(1.0, float(val)))
     return updated
 
 

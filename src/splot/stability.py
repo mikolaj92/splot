@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from .models import SplotState, Candidate, CandidateEvaluation, Decision, new_id
+from .models import SplotState, Candidate, CandidateEvaluation, Decision
+from .policies import _keep_previous
 from .scoring import evaluation_for
 
 
@@ -17,6 +18,7 @@ def apply_stability(
 ) -> tuple[Decision, dict[str, Any], dict[str, Any]]:
     config = profile.get("stability") or {}
     policy = str(config.get("policy", "none"))
+    objective_id = str((profile.get("objective") or {}).get("id", profile.get("id", "")))
     previous = state.previous_decision or {}
     previous_candidate_id = previous.get("selected_candidate_id")
     proposed_candidate_id = decision.selected_candidate_id
@@ -27,7 +29,7 @@ def apply_stability(
         "decision": "accepted",
     }
 
-    if policy == "none" or decision.status not in {"selected", "routed"}:
+    if policy == "none" or decision.status not in {"selected", "routed", "composed"}:
         return decision, analysis, {}
     if not previous_candidate_id or proposed_candidate_id == previous_candidate_id:
         analysis["decision"] = "same_or_first_candidate"
@@ -49,17 +51,16 @@ def apply_stability(
             "score_margin": score_margin,
         }
     )
-
     min_hold_ms = float(config.get("min_hold_ms", config.get("duration_ms", 0.0)))
     if min_hold_ms and not _elapsed(now, state.last_decision_at, min_hold_ms):
         return _keep_previous(
-            profile, state, previous_score, now, f"min_hold_ms has not passed ({min_hold_ms:.0f}ms)"
+            objective_id, previous, now, previous_score, f"min_hold_ms has not passed ({min_hold_ms:.0f}ms)"
         ), _analysis(analysis, "keep_previous_min_hold"), {}
 
     cooldown_ms = float(config.get("cooldown_ms", 0.0))
     if cooldown_ms and not _elapsed(now, state.last_switch_at, cooldown_ms):
         return _keep_previous(
-            profile, state, previous_score, now, f"cooldown has not passed ({cooldown_ms:.0f}ms)"
+            objective_id, previous, now, previous_score, f"cooldown has not passed ({cooldown_ms:.0f}ms)"
         ), _analysis(analysis, "keep_previous_cooldown"), {}
 
     if policy == "debounce":
@@ -71,7 +72,7 @@ def apply_stability(
         analysis["required_rounds"] = required_rounds
         if count < required_rounds:
             return _keep_previous(
-                profile, state, previous_score, now, f"debounce needs {required_rounds} rounds"
+                objective_id, previous, now, previous_score, f"debounce needs {required_rounds} rounds"
             ), _analysis(analysis, "keep_previous_debounce"), update
         return decision, _analysis(analysis, "debounce_passed"), {"pending_candidate_id": None, "pending_count": 0}
 
@@ -85,50 +86,22 @@ def apply_stability(
         analysis["pending_since"] = pending_since
         if hold_ms and not _elapsed(now, pending_since, hold_ms):
             return _keep_previous(
-                profile, state, previous_score, now, f"hold_then_recheck waiting {hold_ms:.0f}ms"
+                objective_id, previous, now, previous_score, f"hold_then_recheck waiting {hold_ms:.0f}ms"
             ), _analysis(analysis, "keep_previous_hold_then_recheck"), update
         return decision, _analysis(analysis, "hold_then_recheck_passed"), {"pending_candidate_id": None}
 
     min_improvement = float(config.get("min_improvement", 0.0))
     if policy in {"hysteresis", "prefer_current_when_close", "switching_cost"} and score_margin < min_improvement:
         return _keep_previous(
-            profile,
-            state,
-            previous_score,
+            objective_id,
+            previous,
             now,
+            previous_score,
             f"score margin {score_margin:.3f} < min_improvement {min_improvement:.3f}",
         ), _analysis(analysis, "keep_previous_hysteresis"), {}
 
     analysis["min_improvement"] = min_improvement
     return decision, _analysis(analysis, "switch_allowed"), _clear_pending(policy)
-
-
-def _keep_previous(
-    profile: dict[str, Any],
-    state: SplotState,
-    confidence: float,
-    now: str,
-    reason: str,
-) -> Decision:
-    previous = state.previous_decision or {}
-    previous_id = previous.get("selected_candidate_id")
-    return Decision(
-        id=new_id("decision"),
-        status="kept_previous",
-        objective_id=str((profile.get("objective") or {}).get("id", profile.get("id", ""))),
-        selected_candidate_id=previous_id,
-        selected_candidate_ids=[previous_id] if previous_id else [],
-        previous_decision_id=previous.get("id"),
-        action=previous.get("action"),
-        confidence=confidence,
-        uncertainty=max(0.0, min(1.0, 1.0 - confidence)),
-        policy_reason=reason,
-        explanation=f"kept previous candidate {previous_id}: {reason}",
-        created_at=now,
-        metadata={
-            "selected_source_ids": list((previous.get("metadata") or {}).get("selected_source_ids") or [])
-        },
-    )
 
 
 def _analysis(analysis: dict[str, Any], decision: str) -> dict[str, Any]:
