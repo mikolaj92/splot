@@ -32,7 +32,11 @@ def update_state(
                 updated.stability_memory[key] = value
     updated.open_human_decisions = list(decision.required_human_inputs)
     if decision.status in {"conflict", "request_more_evidence"}:
-        updated.unresolved_conflicts.append({"at": now, "decision_id": decision.id, "reason": decision.explanation})
+        _remember_conflict(
+            updated.unresolved_conflicts,
+            {"decision_id": decision.id, "reason": decision.explanation},
+            now,
+        )
     updated.candidate_history.append(
         {
             "at": now,
@@ -60,7 +64,9 @@ def update_state(
     if belief:
         updated.metadata["last_belief"] = belief.to_dict()
         updated.metadata["belief_history"] = belief.history
-        updated.unresolved_conflicts = list(belief.conflicts)
+        for conflict in belief.conflicts:
+            _remember_conflict(updated.unresolved_conflicts, conflict, now)
+        updated.unresolved_conflicts = updated.unresolved_conflicts[-50:]
     if feedback:
         updated.metadata.setdefault("feedback", []).append(deepcopy(feedback))
         if feedback.get("state_updates"):
@@ -69,6 +75,19 @@ def update_state(
             )
         updated.source_reliability.update(feedback.get("reliability_updates") or {})
     return updated
+
+
+def _remember_conflict(conflicts: list[dict[str, Any]], entry: dict[str, Any], now: str) -> None:
+    key = _conflict_key(entry)
+    if any(_conflict_key(item) == key for item in conflicts):
+        return
+    conflicts.append({**entry, "at": now})
+
+
+def _conflict_key(conflict: dict[str, Any]) -> str:
+    # "at" and "decision_id" vary per round; the rest identifies the conflict.
+    payload = {key: value for key, value in conflict.items() if key not in {"at", "decision_id"}}
+    return json.dumps(payload, sort_keys=True, default=str)
 
 
 def load_state_file(path: str | Path | None) -> SplotState:

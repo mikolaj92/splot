@@ -32,11 +32,15 @@ def explain_weights(report: dict[str, Any]) -> dict[str, Any]:
     margin = None
     if winner and runner_up:
         margin = float(winner.get("score", 0.0)) - float(runner_up.get("score", 0.0))
+    uncertainty = report.get("uncertainty") or {}
     return {
         "winner": winner.get("candidate_id"),
         "top_evaluated_candidate": evaluations[0].get("candidate_id") if evaluations else None,
         "runner_up": runner_up.get("candidate_id"),
         "score_margin": margin,
+        "uncertainty": uncertainty.get("value"),
+        "uncertainty_components": uncertainty.get("components") or {},
+        "dominant_uncertainty_component": uncertainty.get("dominant_component"),
         "top_signal_contributors": [
             {
                 "id": item.get("id"),
@@ -58,6 +62,8 @@ def format_weight_explanation(summary: dict[str, Any]) -> str:
         f"top_evaluated_candidate: {summary.get('top_evaluated_candidate')}",
         f"runner_up: {summary.get('runner_up')}",
         f"score_margin: {summary.get('score_margin')}",
+        f"uncertainty: {summary.get('uncertainty')} "
+        f"(dominant: {summary.get('dominant_uncertainty_component')})",
     ]
     lines.append("top_signal_contributors:")
     for item in summary.get("top_signal_contributors") or []:

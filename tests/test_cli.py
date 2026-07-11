@@ -126,6 +126,28 @@ class CliTests(unittest.TestCase):
             self.assertIn("Splot Decision Report", html.read_text(encoding="utf-8"))
             self.assertEqual(json.loads(redacted.read_text(encoding="utf-8"))["decision"]["explanation"], "[REDACTED]")
 
+    def test_context_pack_command(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "report.json"
+            pack_path = Path(tmp) / "pack.json"
+            decide = self.run_cli(
+                "decide",
+                "--profile",
+                "examples/profiles/player-camera-director",
+                "--input",
+                "examples/inputs/camera_round_1.json",
+                "--out",
+                str(out),
+            )
+            self.assertEqual(decide.returncode, 0, decide.stderr)
+
+            pack = self.run_cli("context-pack", str(out), "--out", str(pack_path))
+
+            self.assertEqual(pack.returncode, 0, pack.stderr)
+            data = json.loads(pack_path.read_text(encoding="utf-8"))
+            self.assertEqual(data["kind"], "splot.context_pack")
+            self.assertIn("omitted", data)
+
     def test_state_init_command(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp) / "state.json"

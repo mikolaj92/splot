@@ -32,6 +32,7 @@ from .models import (
 )
 from .belief import build_belief
 from .evidence import build_evidence
+from .context_pack import build_context_pack
 from .profile import (
     SplotProfile,
     ProfileDiagnostic,
@@ -85,6 +86,7 @@ __all__ = [
     "Wave",
     "builtin_registry",
     "build_belief",
+    "build_context_pack",
     "build_evidence",
     "audit_report",
     "compare_replay",

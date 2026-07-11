@@ -23,6 +23,7 @@ from .profile import SplotProfile, load_profile, validate_profile
 from .registry import FunctionContext, FunctionRegistry, builtin_registry
 from .reports import apply_report_postprocessors
 from .scoring import evaluate_candidates
+from .sources import stale_source_ids
 from .stability import apply_stability
 from .state import update_state
 from .versioning import (
@@ -85,6 +86,7 @@ def run_round(
         observation_models,
         candidate_models,
         evaluations,
+        now_text,
     )
     evidence = build_evidence(
         loaded_profile.raw,
@@ -170,6 +172,11 @@ def run_round(
         input_digest,
     )
     report = apply_report_postprocessors(loaded_profile.raw, report, updated_state, registry, now_text)
+    # Postprocessors mutate the report's copy of the decision; the pack must
+    # also reach the Decision object handed to callers such as the Fala adapter.
+    report_decision_metadata = (report.decision or {}).get("metadata") or {}
+    if "context_pack" in report_decision_metadata:
+        decision.metadata["context_pack"] = report_decision_metadata["context_pack"]
     return RoundResult(decision=decision, state=updated_state, report=report)
 
 
@@ -273,6 +280,14 @@ def _build_report(
     warnings = list(decision.warnings)
     for evaluation in evaluations:
         warnings.extend(evaluation.warnings)
+    components = dict((belief.metadata or {}).get("uncertainty_components") or {})
+    components["decision"] = decision.uncertainty
+    reduction = (belief.metadata or {}).get("uncertainty_reduction") or {}
+    # The reported value is the largest named component minus the recorded
+    # reduction, so no uncertainty exists outside the components table.
+    uncertainty_value = max(0.0, round(max(components.values()) - float(reduction.get("value", 0.0)), 6))
+    declared_waves = {str(wave["id"]) for wave in profile.raw.get("waves") or [] if wave.get("id") is not None}
+    observed_waves = {observation.wave_id for observation in observations if observation.wave_id}
     return DecisionReport(
         splot_version=SPLOT_VERSION,
         profile_version=int(profile.raw.get("version", 1)),
@@ -294,12 +309,16 @@ def _build_report(
         stability=stability,
         decision=decision.to_dict(),
         uncertainty={
-            "value": max(decision.uncertainty, belief.uncertainty),
+            "value": uncertainty_value,
             "decision_uncertainty": decision.uncertainty,
             "belief_uncertainty": belief.uncertainty,
+            "components": components,
+            "dominant_component": max(components, key=components.get),
             "conflicts": belief.conflicts,
             "stale_sources": belief.stale_sources,
+            "silent_sources": sorted(declared_waves - observed_waves),
             "reasons": decision.warnings,
+            **({"reduction": reduction} if reduction else {}),
         },
         policy_reasons=[decision.policy_reason],
         previous_state=previous_state.to_dict(),
@@ -344,35 +363,36 @@ def _apply_source_staleness(
     observations: list[Observation],
     candidates: list[Candidate],
     evaluations: list[Any],
+    now: str,
 ) -> list[str]:
-    stale_sources = set()
-    for observation in observations:
-        if observation.metadata.get("stale") or observation.values.get("stale"):
-            stale_sources.add(observation.wave_id or observation.id)
-    for wave in profile.get("waves") or []:
-        if wave.get("stale"):
-            stale_sources.add(str(wave["id"]))
+    stale_sources = stale_source_ids(profile, observations, now)
     if not stale_sources:
         return []
 
     behavior = str((profile.get("uncertainty") or {}).get("when_source_stale", "ignore"))
     if behavior not in {"penalize", "block"}:
-        return sorted(stale_sources)
+        return stale_sources
 
     penalty = float((profile.get("uncertainty") or {}).get("stale_penalty", 0.25))
+    stale_set = set(stale_sources)
     candidates_by_id = {candidate.id: candidate for candidate in candidates}
     for evaluation in evaluations:
         candidate = candidates_by_id.get(evaluation.candidate_id)
-        if not candidate or not stale_sources.intersection(candidate.source_ids):
+        if not candidate:
             continue
-        reason = f"candidate uses stale source: {', '.join(sorted(stale_sources.intersection(candidate.source_ids)))}"
+        # A candidate without declared sources reads all observations, so it
+        # depends on every source.
+        affected = stale_set if not candidate.source_ids else stale_set.intersection(candidate.source_ids)
+        if not affected:
+            continue
+        reason = f"candidate uses stale source: {', '.join(sorted(affected))}"
         if behavior == "block":
             evaluation.eligible = False
             evaluation.rejected_reasons.append(reason)
         else:
             evaluation.score = max(0.0, evaluation.score - penalty)
             evaluation.warnings.append(reason)
-    return sorted(stale_sources)
+    return stale_sources
 
 
 def _stale_source_decision(

@@ -31,7 +31,10 @@ class SensitivityTests(unittest.TestCase):
         self.assertEqual(summary["runner_up"], "b")
         self.assertGreater(summary["score_margin"], 0)
         self.assertEqual(summary["top_signal_contributors"][0]["id"], "fit")
-        self.assertIn("top_signal_contributors", format_weight_explanation(summary))
+        self.assertIn(summary["dominant_uncertainty_component"], summary["uncertainty_components"])
+        formatted = format_weight_explanation(summary)
+        self.assertIn("top_signal_contributors", formatted)
+        self.assertIn("dominant:", formatted)
 
 
 if __name__ == "__main__":

@@ -108,6 +108,14 @@ def decide_composition(
     confidence = _mean(
         [evaluation.score for evaluation in evaluations if evaluation.candidate_id in set(selected_ids)]
     )
+    selected_source_ids = sorted(
+        {
+            source_id
+            for candidate in candidates
+            if candidate.id in selected_set
+            for source_id in candidate.source_ids
+        }
+    )
     decision = Decision(
         id=new_id("decision"),
         status=status,
@@ -125,6 +133,7 @@ def decide_composition(
         required_human_inputs=human_decisions
         + [f"missing required section: {item}" for item in missing_required],
         created_at=now,
+        metadata={"selected_source_ids": selected_source_ids},
     )
     return decision, {"policy": "section_by_section_composition", "decision": status, **plan}
 

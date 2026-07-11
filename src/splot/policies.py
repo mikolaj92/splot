@@ -91,6 +91,7 @@ def decide_from_evaluations(
             )
 
     if best.human_decisions:
+        candidate = _candidate_by_id(candidates, best.candidate_id)
         return Decision(
             id=new_id("decision"),
             status="needs_human_decision",
@@ -98,7 +99,7 @@ def decide_from_evaluations(
             selected_candidate_id=best.candidate_id,
             selected_candidate_ids=[best.candidate_id],
             previous_decision_id=previous.get("id"),
-            action=_action_for_candidate(profile, _candidate_by_id(candidates, best.candidate_id)),
+            action=_action_for_candidate(profile, candidate),
             confidence=best.score,
             uncertainty=1.0 - best.score,
             policy_reason="candidate_requires_human_decision",
@@ -107,6 +108,7 @@ def decide_from_evaluations(
             warnings=best.warnings,
             required_human_inputs=best.human_decisions,
             created_at=now,
+            metadata={"selected_source_ids": _candidate_source_ids(candidate)},
         )
 
     candidate = _candidate_by_id(candidates, best.candidate_id)
@@ -126,7 +128,11 @@ def decide_from_evaluations(
         rejected_candidates=rejected,
         warnings=best.warnings,
         created_at=now,
-        metadata={"score_margin": margin, "second_candidate_id": second.candidate_id if second else None},
+        metadata={
+            "score_margin": margin,
+            "second_candidate_id": second.candidate_id if second else None,
+            "selected_source_ids": _candidate_source_ids(candidate),
+        },
     )
 
 
@@ -185,6 +191,7 @@ def _keep_previous(
         policy_reason=reason,
         explanation=f"kept previous candidate {previous_id}: {reason}",
         created_at=now,
+        metadata={"selected_source_ids": _previous_source_ids(previous)},
     )
 
 
@@ -193,6 +200,14 @@ def _candidate_by_id(candidates: list[Candidate], candidate_id: str) -> Candidat
         if candidate.id == candidate_id:
             return candidate
     return None
+
+
+def _candidate_source_ids(candidate: Candidate | None) -> list[str]:
+    return list(candidate.source_ids) if candidate else []
+
+
+def _previous_source_ids(previous: dict[str, Any]) -> list[str]:
+    return list((previous.get("metadata") or {}).get("selected_source_ids") or [])
 
 
 def _status_for_mode(profile: dict[str, Any], candidate: Candidate | None) -> str:

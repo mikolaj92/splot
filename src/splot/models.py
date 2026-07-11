@@ -134,6 +134,7 @@ class Signal(JsonModel):
     confidence: float = 1.0
     reason: str | None = None
     contribution: float = 0.0
+    sources: list[JsonDict] = field(default_factory=list)
 
 
 @dataclass

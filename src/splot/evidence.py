@@ -62,9 +62,23 @@ def _default_signal_evidence(evaluations: list[CandidateEvaluation], now: str) -
             supports = [signal.id] if signal.normalized >= 0.5 else []
             opposes = [signal.id] if signal.normalized < 0.5 else []
             strength = abs(signal.normalized - 0.5) * 2
+            metadata = {
+                "created_at": now,
+                "signal_id": signal.id,
+                "normalized": signal.normalized,
+                "weight": signal.weight,
+                "contribution": signal.contribution,
+            }
+            if signal.sources:
+                metadata["sources"] = signal.sources
             evidence.append(
                 Evidence(
                     id=new_id("evidence"),
+                    observation_id=(
+                        signal.sources[0].get("observation_id")
+                        if len(signal.sources) == 1
+                        else None
+                    ),
                     candidate_id=evaluation.candidate_id,
                     supports=supports,
                     opposes=opposes,
@@ -74,13 +88,7 @@ def _default_signal_evidence(evaluations: list[CandidateEvaluation], now: str) -
                         signal.reason
                         or f"{signal.id} normalized={signal.normalized:.3f} contribution={signal.contribution:.3f}"
                     ],
-                    metadata={
-                        "created_at": now,
-                        "signal_id": signal.id,
-                        "normalized": signal.normalized,
-                        "weight": signal.weight,
-                        "contribution": signal.contribution,
-                    },
+                    metadata=metadata,
                 )
             )
         for reason in evaluation.rejected_reasons:

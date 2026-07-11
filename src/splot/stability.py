@@ -125,6 +125,9 @@ def _keep_previous(
         policy_reason=reason,
         explanation=f"kept previous candidate {previous_id}: {reason}",
         created_at=now,
+        metadata={
+            "selected_source_ids": list((previous.get("metadata") or {}).get("selected_source_ids") or [])
+        },
     )
 
 

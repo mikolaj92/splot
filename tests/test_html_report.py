@@ -26,6 +26,7 @@ class HtmlReportTests(unittest.TestCase):
         )
 
         self.assertIn("Splot Decision Report", html)
+        self.assertIn("dominant=", html)
         self.assertIn("selected", html)
         self.assertIn("[REDACTED]", html)
         self.assertNotIn("selected winner with score", html)

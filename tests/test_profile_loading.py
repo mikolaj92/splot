@@ -54,6 +54,30 @@ class ProfileLoadingTests(unittest.TestCase):
                 }
             )
 
+    def test_invalid_signal_range_fails(self):
+        with self.assertRaisesRegex(ProfileError, "range low must be below high"):
+            load_profile(
+                {
+                    "version": 1,
+                    "id": "bad",
+                    "mode": "select_one",
+                    "objective": {"id": "objective"},
+                    "signals": [{"id": "score", "weight": 1, "range": [5, 5]}],
+                }
+            )
+
+    def test_invalid_signal_reduce_fails(self):
+        with self.assertRaisesRegex(ProfileError, "reduce must be one of"):
+            load_profile(
+                {
+                    "version": 1,
+                    "id": "bad",
+                    "mode": "select_one",
+                    "objective": {"id": "objective"},
+                    "signals": [{"id": "score", "weight": 1, "reduce": "average"}],
+                }
+            )
+
     def test_missing_required_field_fails(self):
         with self.assertRaisesRegex(ProfileError, "missing required field"):
             load_profile({"version": 1, "id": "bad", "objective": {"id": "objective"}})

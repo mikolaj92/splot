@@ -107,6 +107,10 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
         reliability = _as_number(wave.get("reliability", 1.0), f"wave {wave['id']} reliability")
         if not 0 <= reliability <= 1:
             raise ProfileError(f"wave {wave['id']} reliability must be between 0 and 1")
+        if "max_age_seconds" in wave:
+            max_age = _as_number(wave["max_age_seconds"], f"wave {wave['id']} max_age_seconds")
+            if max_age < 0:
+                raise ProfileError(f"wave {wave['id']} max_age_seconds must be non-negative")
 
     signals = data.get("signals") or []
     if not isinstance(signals, list):
@@ -127,6 +131,22 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
         for threshold in ("min", "max", "target"):
             if threshold in signal:
                 _as_number(signal[threshold], f"signal {signal['id']} {threshold}")
+        if "range" in signal:
+            bounds = signal["range"]
+            if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+                raise ProfileError(f"signal {signal['id']} range must be [low, high]")
+            low = _as_number(bounds[0], f"signal {signal['id']} range low")
+            high = _as_number(bounds[1], f"signal {signal['id']} range high")
+            if high <= low:
+                raise ProfileError(f"signal {signal['id']} range low must be below high")
+        if "reduce" in signal and signal["reduce"] not in {"last", "mean", "median", "min", "max"}:
+            raise ProfileError(
+                f"signal {signal['id']} reduce must be one of: last, mean, median, min, max"
+            )
+        if "tolerance" in signal:
+            tolerance = _as_number(signal["tolerance"], f"signal {signal['id']} tolerance")
+            if tolerance < 0:
+                raise ProfileError(f"signal {signal['id']} tolerance must be non-negative")
         total_weight += weight
         if signal.get("provider") and registry is not None and not registry.has(signal["provider"]):
             raise ProfileError(f"unregistered signal provider: {signal['provider']}")
@@ -214,6 +234,23 @@ def validate_profile(profile: SplotProfile, registry: Any | None = None) -> None
     scoring = data.get("scoring") or {}
     if scoring.get("provider") and registry is not None and not registry.has(scoring["provider"]):
         raise ProfileError(f"unregistered scorer: {scoring['provider']}")
+    if "use_source_reliability" in scoring and not isinstance(scoring["use_source_reliability"], bool):
+        raise ProfileError("scoring.use_source_reliability must be a boolean")
+
+    belief_config = data.get("belief") or {}
+    if "contested_threshold" in belief_config:
+        contested_threshold = _as_number(belief_config["contested_threshold"], "belief.contested_threshold")
+        if contested_threshold < 0:
+            raise ProfileError("belief.contested_threshold must be non-negative")
+    if "smoothing" in belief_config:
+        smoothing = _as_number(belief_config["smoothing"], "belief.smoothing")
+        if not 0 <= smoothing < 1:
+            raise ProfileError("belief.smoothing must be in [0, 1)")
+    for stability_key in ("stability_step", "stability_cap"):
+        if stability_key in belief_config:
+            stability_value = _as_number(belief_config[stability_key], f"belief.{stability_key}")
+            if stability_value < 0:
+                raise ProfileError(f"belief.{stability_key} must be non-negative")
 
     decision_renderer = data.get("decision_renderer") or {}
     if decision_renderer.get("provider") and registry is not None and not registry.has(decision_renderer["provider"]):

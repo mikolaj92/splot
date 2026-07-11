@@ -33,6 +33,9 @@ classifiers = [
 fala = []
 
 [dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
 # Local/developer helper only; dependency groups are not published as wheel
 # Requires-Dist metadata.
 fala = ["fala @ git+https://github.com/mikolaj92/Fala.git@0.1.0"]

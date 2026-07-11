@@ -8,6 +8,24 @@ Splot follows simple semantic versioning while the API stabilizes:
 
 ## Unreleased
 
+- Entropy-minimization pass across the arbitration pipeline (in the cybernetic
+  tradition Splot builds on; still counting and spread only, no probability
+  math): feedback reliability updates keyed by `selected_source_ids`; evidence
+  confidence and source reliability feed belief uncertainty; opt-in
+  `scoring.use_source_reliability`; wave `max_age_seconds` staleness and
+  `silent_sources` reporting; named uncertainty components with a
+  `dominant_component`; contested-candidate conflicts and deduplicated
+  cross-round conflict persistence; `range: [low, high]` signal normalization.
+- Multi-source fusion in `observation.value`: opt-in `reduce`
+  (`last`/`mean`/`median`/`min`/`max`) fuses the newest value per wave,
+  disagreement above `tolerance` lowers signal confidence and names the
+  disagreeing sources, and per-source attribution reaches the evidence.
+- Belief accumulation across rounds: per-candidate `rounds_seen`, opt-in
+  `belief.smoothing` of support/opposition, and a winner-streak uncertainty
+  reduction that is always recorded explicitly in the report.
+- LLM-ready context pack: `splot context-pack`, `build_context_pack`, and the
+  `postprocess.context_pack` postprocessor emit one condensed deterministic
+  signal with an explicit `omitted` registry and always-on redaction.
 - Documented the theoretical foundation: Splot is presented as a cybernetic
   mechanism after Marian Mazur (qualitative theory of information, theory of
   autonomous systems) — many signals in, one minimized-entropy decision signal

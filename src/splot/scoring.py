@@ -6,6 +6,7 @@ from .constraints import apply_constraints
 from .models import SplotState, Candidate, CandidateEvaluation, Observation
 from .registry import FunctionRegistry
 from .signals import build_signals
+from .sources import candidate_reliability, source_reliability_map
 from .verifiers import apply_verifiers
 
 
@@ -39,6 +40,9 @@ def evaluate_candidate(
     verifiers = apply_verifiers(profile, observations, candidates, candidate, state, registry, now)
 
     raw_score = _score_candidate(profile, observations, candidates, candidate, state, registry, now, signals)
+    if (profile.get("scoring") or {}).get("use_source_reliability"):
+        reliability = source_reliability_map(profile, [candidate], state)
+        raw_score *= candidate_reliability(candidate, reliability)
     penalty = sum(result.penalty for result in constraints if not result.passed)
     score = max(0.0, min(1.0, raw_score - penalty))
 

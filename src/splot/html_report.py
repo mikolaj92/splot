@@ -10,6 +10,7 @@ from .redaction import redact_value
 def render_html_report(report: dict[str, Any], *, redact: bool = False, fields: list[str] | None = None) -> str:
     data = redact_value(report, fields) if redact else report
     decision = data.get("decision") or {}
+    uncertainty = data.get("uncertainty") or {}
     rows = "\n".join(_evaluation_row(item) for item in data.get("evaluations") or [])
     human = "".join(f"<li>{_e(item)}</li>" for item in data.get("human_decisions") or [])
     warnings = "".join(f"<li>{_e(item)}</li>" for item in data.get("warnings") or [])
@@ -37,6 +38,7 @@ def render_html_report(report: dict[str, Any], *, redact: bool = False, fields: 
   <section>
     <h2>Summary</h2>
     <p><span class="status">{_e(decision.get('status'))}</span> confidence={_e(decision.get('confidence'))}</p>
+    <p>uncertainty={_e(uncertainty.get('value'))} dominant={_e(uncertainty.get('dominant_component'))}</p>
     <p>profile={_e(data.get('profile_id'))} round={_e(data.get('round_id'))}</p>
     <p>created_at={_e(data.get('created_at'))}</p>
   </section>

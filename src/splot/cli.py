@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .audit import audit_report, compare_replay, compare_reports
+from .context_pack import build_context_pack
 from .html_report import render_html_report
 from .models import SplotState
 from .profile import ProfileError, diagnose_profile, load_profile, validate_profile
@@ -75,6 +76,13 @@ def main(argv: list[str] | None = None) -> int:
     redact_parser.add_argument("--out", required=True)
     redact_parser.add_argument("--field", action="append", default=[])
 
+    pack_parser = subcommands.add_parser("context-pack")
+    pack_parser.add_argument("report")
+    pack_parser.add_argument("--out")
+    pack_parser.add_argument("--max-bytes", type=int, default=8000)
+    pack_parser.add_argument("--top-evidence", type=int, default=5)
+    pack_parser.add_argument("--field", action="append", default=[])
+
     report_parser = subcommands.add_parser("report")
     report_subcommands = report_parser.add_subparsers(dest="report_command", required=True)
     report_validate = report_subcommands.add_parser("validate")
@@ -115,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
             return _sensitivity(args)
         if args.command == "redact-report":
             return _redact_report(args)
+        if args.command == "context-pack":
+            return _context_pack(args)
         if args.command == "report":
             return _report(args)
         if args.command == "state":
@@ -270,6 +280,23 @@ def _sensitivity(args: argparse.Namespace) -> int:
         feedback=payload.get("feedback"),
     )
     print(format_weight_explanation(explain_weights(result.report.to_dict())))
+    return 0
+
+
+def _context_pack(args: argparse.Namespace) -> int:
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    pack = build_context_pack(
+        report,
+        max_bytes=args.max_bytes,
+        top_evidence=args.top_evidence,
+        fields=args.field,
+    )
+    text = json.dumps(pack, indent=2, sort_keys=True, ensure_ascii=False)
+    if args.out:
+        Path(args.out).write_text(text, encoding="utf-8")
+        print(f"wrote context pack: {args.out}")
+    else:
+        print(text)
     return 0
 
 
