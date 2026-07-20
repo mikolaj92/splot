@@ -9,7 +9,7 @@ runtime dependency of Splot: no server, Redis, Postgres, Kafka, or scheduler.
 
 - `stdin.json` — a Fala-shaped step input: `config.profile` plus `input.needs`
   with **carriers** and **observations**.
-- `fala-package.yaml` — a Fala carrier package that runs `splot-fala-step`
+- `fala-package.toml` — a Fala carrier package that runs `splot-fala-step`
   as a `subprocess` capability and adds a `manual_gate` step for human review.
 
 The integration is built against **Fala 0.1.0** as its baseline. Fala is never a

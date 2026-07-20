@@ -11,7 +11,7 @@ def _check(ok: Bool, msg: String) raises:
 def main() raises:
     var payload = (
         "{"
-        + "\"profile\":\"examples/fixtures/player_camera_director.profile.json\","
+        + "\"profile\":\"examples/fixtures/player_camera_director.profile.toml\","
         + "\"candidates\":["
         + "{\"id\":\"a\",\"payload\":{\"visibility\":0.9,\"face_angle\":0.8,\"sharpness\":0.7,\"occlusion\":0.1,\"available\":true}},"
         + "{\"id\":\"b\",\"payload\":{\"visibility\":0.5,\"face_angle\":0.4,\"sharpness\":0.4,\"occlusion\":0.5,\"available\":true}}"

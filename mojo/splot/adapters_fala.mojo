@@ -6,6 +6,7 @@ from emberjson import Value, to_string
 from splot.json_util import obj_string, parse_json, quote
 from splot.models import Candidate, RoundResult, SplotState
 from splot.pipeline import run_round
+from splot.profile import load_profile_toml
 
 
 def _candidates_from_input(root: Value) raises -> List[Candidate]:
@@ -55,12 +56,14 @@ def _load_profile(root: Value) raises -> Value:
     if path == "":
         path = obj_string(root, "profile_path", "")
     if path == "":
-        # inline profile object
+        # inline profile object (JSON Value tree)
         if root.is_object() and "profile_object" in root.object():
             return root.object()["profile_object"].copy()
         raise Error("splot: profile or profile_path required")
-    var text = Path(path).read_text()
-    return parse_json(text)
+    # Profiles are TOML only (.toml). Reject .yaml/.yml explicitly.
+    if path.find(".yaml") >= 0 or path.find(".yml") >= 0:
+        raise Error("splot: YAML profiles are not supported; use profile.toml")
+    return load_profile_toml(path)
 
 
 def arbitration_step(input_json: String) raises -> String:

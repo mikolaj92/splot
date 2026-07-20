@@ -22,7 +22,8 @@ and `tests/` removed.
 | Stability hysteresis | done |
 | JSON profile fixtures | done |
 | Fala JSON adapter | done |
-| Full YAML profile loader + all Python providers | not yet (extend builtins) |
+| TOML profile loader | done |
+| Extra providers beyond builtins | extend as needed |
 | HTML CLI / full report audit suite | not yet |
 
 ## Fala

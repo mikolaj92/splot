@@ -1,10 +1,9 @@
 """Core arbitration smoke: camera-style candidates + fixture profile."""
 
 from std.collections import List
-from std.pathlib import Path
-from splot.json_util import parse_json
 from splot.models import Candidate, SplotState
 from splot.pipeline import run_round
+from splot.profile import load_profile_toml
 
 
 def _check(ok: Bool, msg: String) raises:
@@ -13,8 +12,8 @@ def _check(ok: Bool, msg: String) raises:
 
 
 def main() raises:
-    var profile_path = "examples/fixtures/player_camera_director.profile.json"
-    var profile = parse_json(Path(profile_path).read_text())
+    var profile_path = "examples/fixtures/player_camera_director.profile.toml"
+    var profile = load_profile_toml(profile_path)
     var candidates = List[Candidate]()
     candidates.append(
         Candidate(

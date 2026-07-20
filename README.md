@@ -20,7 +20,7 @@ import Fala.
 ```text
 mojo/splot/          # engine
 mojo/smoke/          # proof
-examples/profiles/   # YAML profiles (data)
+examples/profiles/   # TOML profiles (data)
 examples/fixtures/   # JSON profiles for native load
 schemas/             # shared JSON Schema
 docs/MOJO_PORT.md    # migration notes
@@ -46,10 +46,10 @@ mise exec -- pixi run full-smoke
 ```mojo
 from splot.pipeline import run_round
 from splot.models import Candidate, SplotState
-from splot.json_util import parse_json
+from splot.profile import load_profile_toml
 from std.pathlib import Path
 
-var profile = parse_json(Path("examples/fixtures/player_camera_director.profile.json").read_text())
+var profile = parse_json(Path("examples/fixtures/player_camera_director.profile.toml").read_text())
 var cands = List[Candidate]()
 cands.append(Candidate("a", "{\"visibility\":0.9,\"available\":true}"))
 var result = run_round(profile, cands, SplotState())
