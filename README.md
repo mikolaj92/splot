@@ -1,5 +1,7 @@
 # Splot
 
+**Version 0.3.0** — first **exclusive Mojo** release.
+
 **Splot is a fully Mojo library.** There is no Python runtime, no YAML, no
 database, and no report store.
 

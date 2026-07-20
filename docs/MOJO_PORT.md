@@ -1,5 +1,7 @@
 # Exclusive Mojo — minimal product
 
+**Release: 0.3.0**
+
 Splot is a **Mojo-only** arbitration step: compose several signals into one
 decision. No Python product, no report suite, no storage product.
 

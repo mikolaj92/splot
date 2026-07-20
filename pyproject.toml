@@ -1,6 +1,6 @@
 [project]
 name = "splot"
-version = "0.2.1"
+version = "0.3.0"
 description = "Standalone information arbitration runtime — product engine is Mojo (mojo/splot)."
 readme = "README.md"
 requires-python = ">=3.12"
