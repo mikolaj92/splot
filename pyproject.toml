@@ -1,44 +1,19 @@
 [project]
-# Distribution name; the PyPI name `splot` is taken by an unrelated PySAL
-# package, so publish as `splot-runtime`. The import package and console
-# scripts stay `splot` / `splot-fala-step`.
-name = "splot-runtime"
+name = "splot"
 version = "0.2.1"
-description = "Cybernetic information arbitration runtime: many signals in, one minimized-entropy decision out."
+description = "Standalone information arbitration runtime — product engine is Mojo (mojo/splot)."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
-authors = [
-  { name = "mikolaj92" }
-]
+authors = [{ name = "mikolaj92" }]
 dependencies = []
-keywords = ["arbitration", "cybernetics", "decision-support", "entropy", "evidence", "runtime", "profiles", "signals"]
+keywords = ["arbitration", "decision-support", "mojo", "cybernetics"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Mojo",
   "Typing :: Typed",
 ]
-
-[project.optional-dependencies]
-# Splot stays standalone (dependencies = []); the real Fala runtime is optional.
-# Public indexes reject direct Git URL dependencies in package metadata, so the
-# published extra is dependency-free. Install Fala explicitly from GitHub when
-# the fala.sdk-backed manifest-step path in splot.adapters.fala is desired.
-# Without Fala installed, the import-free fallback runs, so Splot never
-# hard-depends on Fala.
-fala = []
-
-[dependency-groups]
-dev = [
-    "pytest>=9.1.1",
-]
-# Local/developer helper only; dependency groups are not published as wheel
-# Requires-Dist metadata.
-fala = ["fala @ git+https://github.com/mikolaj92/Fala.git@0.1.0"]
 
 [project.urls]
 Homepage = "https://github.com/mikolaj92/splot"
@@ -46,13 +21,27 @@ Repository = "https://github.com/mikolaj92/splot"
 Issues = "https://github.com/mikolaj92/splot/issues"
 Changelog = "https://github.com/mikolaj92/splot/blob/main/CHANGELOG.md"
 
-[project.scripts]
-splot = "splot.cli:main"
-splot-fala-step = "splot.adapters.fala:run_stdio"
-
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+# Metadata-only Python package; product modules live under mojo/splot.
+[tool.hatch.build.targets.wheel]
+only-include = ["README.md"]
+
+[dependency-groups]
+mojo = [
+  "mojo==1.0.0b3.dev2026071505; sys_platform != 'win32'",
+]
+
+[[tool.uv.index]]
+name = "modular-nightly"
+url = "https://whl.modular.com/nightly/simple/"
+explicit = true
+
+[tool.uv.sources]
+mojo = { index = "modular-nightly" }
+
+[tool.uv]
+index-strategy = "unsafe-best-match"
+prerelease = "allow"

@@ -1,5 +1,10 @@
 # Fala + Splot + Takt Integration
 
+**Splot product runtime is Mojo** (`mojo/splot`). The Python package has been
+removed. Integration remains a JSON / process boundary (see
+`mojo/splot/adapters_fala.mojo`).
+
+
 ## Architecture note: three layers, one archetype
 
 Fala, Splot and Takt are complementary layers over the same information-flow archetype in the tradition of Marian Mazur and Józef Kossecki.

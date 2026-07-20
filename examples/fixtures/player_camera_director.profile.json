@@ -1,0 +1,103 @@
+{
+  "constraints": [
+    {
+      "id": "source_must_be_live",
+      "provider": "candidate.available",
+      "reason": "source is not live",
+      "severity": "block"
+    },
+    {
+      "id": "player_must_be_visible",
+      "operator": "gte",
+      "severity": "block",
+      "signal": "visibility",
+      "value": 0.6
+    }
+  ],
+  "decision": {
+    "close_margin": 0.05,
+    "policy": "constrained_weighted_score",
+    "tie_breaker": "keep_current"
+  },
+  "feedback_handlers": [
+    {
+      "provider": "feedback.acceptance_reliability"
+    }
+  ],
+  "id": "player_camera_director",
+  "language": "pl",
+  "mode": "select_one",
+  "objective": {
+    "description": "Select the source that best represents the current target.",
+    "id": "best_player_view"
+  },
+  "signals": [
+    {
+      "field": "visibility",
+      "id": "visibility",
+      "min": 0.6,
+      "prefer": "higher",
+      "provider": "candidate.value",
+      "weight": 0.35
+    },
+    {
+      "field": "face_angle",
+      "id": "face_angle",
+      "prefer": "higher",
+      "provider": "candidate.value",
+      "weight": 0.2
+    },
+    {
+      "field": "sharpness",
+      "id": "sharpness",
+      "prefer": "higher",
+      "provider": "candidate.value",
+      "weight": 0.15
+    },
+    {
+      "field": "occlusion",
+      "id": "occlusion",
+      "prefer": "lower",
+      "provider": "candidate.value",
+      "weight": 0.2
+    },
+    {
+      "id": "current_candidate_bonus",
+      "prefer": "higher",
+      "provider": "state.is_current",
+      "weight": 0.1
+    }
+  ],
+  "stability": {
+    "cooldown_ms": 2500,
+    "min_hold_ms": 1200,
+    "min_improvement": 0.15,
+    "policy": "hysteresis",
+    "prefer_current_when_close": true
+  },
+  "uncertainty": {
+    "when_close": "keep_previous",
+    "when_conflicting": "request_more_evidence",
+    "when_constraints_block_all": "fallback",
+    "when_no_candidate": "fallback",
+    "when_source_stale": "request_more_evidence"
+  },
+  "version": 1,
+  "waves": [
+    {
+      "id": "camera_1",
+      "kind": "video",
+      "reliability": 0.95
+    },
+    {
+      "id": "camera_2",
+      "kind": "video",
+      "reliability": 0.93
+    },
+    {
+      "id": "camera_3",
+      "kind": "video",
+      "reliability": 0.91
+    }
+  ]
+}
