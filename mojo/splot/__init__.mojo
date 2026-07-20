@@ -1,6 +1,6 @@
 """Splot — standalone arbitration runtime (Mojo exclusive)."""
 
-comptime SPLOT_VERSION = "0.3.0"
+comptime SPLOT_VERSION = "0.3.1"
 
 from .models import (
     Candidate,

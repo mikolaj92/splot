@@ -1,6 +1,6 @@
 # Splot
 
-**Version 0.3.0** — first **exclusive Mojo** release.
+**Version 0.3.1** — exclusive Mojo + Fala subprocess step.
 
 **Splot is a fully Mojo library.** There is no Python runtime, no YAML, no
 database, and no report store.
@@ -62,12 +62,12 @@ persistence. Splot only **computes the decision**.
 | Python | **none** in the product tree |
 
 ```text
-mojo/splot/     engine
+mojo/splot/     engine (+ step_main for host entry)
 mojo/smoke/     gates
 examples/       TOML profiles & fixtures
 docs/           short design notes
 vendor/         EmberJson
-tools/          mojo_run.sh
+tools/          mojo_run.sh, splot_step.sh (Fala effector)
 ```
 
 ## Quick proof
@@ -77,6 +77,22 @@ Requires a Mojo toolchain (Pixi or a sibling Fala Pixi env via `tools/mojo_run.s
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
+```
+
+### One step as a subprocess (Fala-compatible)
+
+```bash
+# From Splot (or via Fala process host → this script):
+export SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json
+./tools/splot_step.sh
+# With FALA_EFFECTOR_OUTPUT_DIR set, writes output/result.json
+```
+
+Fala integration proof (sibling checkout):
+
+```bash
+# From Fala:
+mise exec -- pixi run splot-integration
 ```
 
 Both should print `… smoke ok`.

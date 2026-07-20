@@ -6,6 +6,27 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## 0.3.1
+
+**Fala host step.** Patch release so Fala (or any process host) can run one
+arbitration step as a subprocess effector.
+
+### Added
+
+- `mojo/splot/step_main.mojo` — CLI entry: request JSON path / Fala effector
+  boundary (`FALA_EFFECTOR_*`) / `SPLOT_REQUEST_PATH` → writes
+  `output/result.json` or prints the decision envelope.
+- `tools/splot_step.sh` — host-friendly wrapper; sets `PATH` /
+  `CONDA_PREFIX` / `MODULAR_HOME` from local or sibling Fala Pixi env so Mojo
+  finds `std` under a sanitized process-host environment.
+- `examples/fixtures/player_camera_director.request.json` — fixture used by the
+  Fala integration smoke.
+
+### Contract
+
+Unchanged from 0.3.0 (decision + state). Hosts may pass Mojo toolchain env
+explicitly when the parent process sanitizes the environment.
+
 ## 0.3.0
 
 **Exclusive Mojo product.** First release of Splot as a fully Mojo arbitration
