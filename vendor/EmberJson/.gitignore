@@ -1,0 +1,16 @@
+# pixi environments
+.pixi
+*.egg-info
+# magic environments
+.magic
+
+output
+recipes/recipe.yaml
+.vscode
+**.DS_Store**
+playground.mojo
+.env
+emberjson.mojopkg
+__mojocache__
+kgen.trace.json**
+.claude

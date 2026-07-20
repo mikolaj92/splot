@@ -1,0 +1,322 @@
+from emberjson.value import Value, Null
+from emberjson import Object, Array, write_pretty
+from std.sys import size_of
+from std.testing import (
+    assert_equal,
+    assert_true,
+    assert_raises,
+    assert_not_equal,
+    assert_almost_equal,
+    assert_false,
+    TestSuite,
+)
+
+
+def test_nested_access() raises:
+    var nested: Value = {"key": [True, None, {"inner2": False}]}
+
+    assert_equal(nested["key"][2]["inner2"].bool(), False)
+
+
+def test_bool() raises:
+    var s: String = "false"
+    var v = Value(parse_string=s)
+    assert_true(v.is_bool())
+    assert_equal(v.bool(), False)
+    assert_equal(String(v), s)
+
+    s = "true"
+    v = Value(parse_string=s)
+    assert_true(v.is_bool())
+    assert_equal(v.bool(), True)
+    assert_equal(String(v), s)
+
+
+def test_string() raises:
+    var s: String = '"Some String"'
+    var v = Value(parse_string=s)
+    assert_true(v.is_string())
+    assert_equal(v.string(), "Some String")
+    assert_equal(String(v), s)
+
+    s = '"Escaped"'
+    v = Value(parse_string=s)
+    assert_true(v.is_string())
+    assert_equal(v.string(), "Escaped")
+    assert_equal(String(v), s)
+
+    # check short string
+    s = '"s"'
+    v = Value(parse_string=s)
+    assert_equal(v.string(), "s")
+    assert_equal(String(v), s)
+
+    with assert_raises():
+        _ = Value(parse_string=r"Invalid unicode \u123z escape")
+
+    with assert_raises():
+        _ = Value(parse_string=r"Another invalid \uXYZG escape")
+
+    with assert_raises():
+        _ = Value(parse_string=r"Wrong format \u12Z4 escape")
+
+    with assert_raises():
+        _ = Value(parse_string=r"Wrong format \uFFFF escape")
+
+    with assert_raises():
+        _ = Value(parse_string=r"Incomplete escape \u12 escape")
+
+
+def test_null() raises:
+    var s: String = "null"
+    var v = Value(parse_string=s)
+    assert_true(v.is_null())
+    assert_equal(v.null(), Null())
+    assert_equal(String(v), s)
+
+    assert_true(Value(None).is_null())
+
+    with assert_raises(contains="Encountered EOF when expecting 'null'"):
+        _ = Value(parse_string="nil")
+
+
+def test_integer() raises:
+    var v = Value(parse_string="123")
+    assert_true(v.is_int())
+    assert_equal(v.int(), 123)
+    assert_equal(v.uint(), 123)
+    assert_equal(String(v), "123")
+    assert_true(v.is_int())
+
+    # test to make signed vs unsigned comparisons work
+    assert_equal(Value(Int64(123)), Value(UInt64(123)))
+    assert_equal(Value(UInt64(123)), Value(Int64(123)))
+    assert_not_equal(Value(Int64(125)), Value(UInt64(123)))
+    assert_not_equal(Value(UInt64(125)), Value(Int64(123)))
+    assert_not_equal(Value(UInt64(Int64.MAX) + 10), Int64.MAX)
+    assert_not_equal(Value(-123), Value(UInt64(123)))
+
+
+def test_integer_leading_plus() raises:
+    with assert_raises():
+        _ = Value(parse_string="+123")
+
+
+def test_integer_negative() raises:
+    var v = Value(parse_string="-123")
+    assert_true(v.is_int())
+    assert_equal(v.int(), -123)
+    assert_equal(String(v), "-123")
+
+
+def test_signed_overflow_to_unsigned() raises:
+    var n = UInt64(Int64.MAX) + 100
+    var v = Value(parse_string=String(n))
+    assert_true(v.is_uint())
+    assert_equal(v.uint(), n)
+    assert_equal(String(v), String(n))
+
+
+def test_float() raises:
+    var v = Value(parse_string="43.5")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), 43.5)
+    assert_equal(String(v), "43.5")
+    assert_true(v.is_float())
+
+
+def test_eight_digits_after_dot() raises:
+    var v = Value(parse_string="342.12345678")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), 342.12345678)
+    assert_equal(String(v), "342.12345678")
+
+
+def test_special_case_floats() raises:
+    var v = Value(parse_string="2.2250738585072013e-308")
+    assert_almost_equal(v.float(), 2.2250738585072013e-308)
+    assert_true(v.is_float())
+
+    v = Value(parse_string="7.2057594037927933e+16")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), 7.2057594037927933e16)
+
+    v = Value(parse_string="1e000000000000000000001")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), 1e000000000000000000001)
+
+    v = Value(
+        parse_string="3.1415926535897932384626433832795028841971693993751"
+    )
+    assert_true(v.is_float())
+    assert_almost_equal(
+        v.float(), 3.1415926535897932384626433832795028841971693993751
+    )
+
+    with assert_raises():
+        # This is "infinite"
+        _ = Value(
+            parse_string="10000000000000000000000000000000000000000000e+308"
+        )
+
+    v = Value(parse_string=String(Float64.MAX_FINITE))
+    assert_equal(v.float(), Float64.MAX_FINITE)
+
+    v = Value(parse_string=String(Float64.MIN_FINITE))
+    assert_equal(v.float(), Float64.MIN_FINITE)
+
+
+def test_float_leading_plus() raises:
+    with assert_raises():
+        _ = Value(parse_string="+43.5")
+
+
+def test_float_negative() raises:
+    var v = Value(parse_string="-43.5")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), -43.5)
+
+
+def test_float_exponent() raises:
+    var v = Value(parse_string="43.5e10")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), 43.5e10)
+
+
+def test_float_exponent_negative() raises:
+    var v = Value(parse_string="-43.5e10")
+    assert_true(v.is_float())
+    assert_almost_equal(v.float(), -43.5e10)
+
+
+def test_equality() raises:
+    var v1 = Value(34)
+    var v2 = Value("Some string")
+    var v3 = Value("Some string")
+    assert_equal(v2, v3)
+    assert_not_equal(v1, v2)
+
+    def eq_self(v: Value) raises:
+        assert_equal(v, v)
+
+    eq_self(Value(123))
+    eq_self(Value(34.5))
+    eq_self(Value(Null()))
+    eq_self(Value(False))
+    eq_self(Value(Array()))
+    eq_self(Value(Object()))
+
+
+def test_implicit_conversion() raises:
+    var val: Value = "a string"
+    assert_equal(val.string(), "a string")
+    val = 100
+    assert_equal(val.int(), 100)
+    val = False
+    assert_false(val.bool())
+    val = 1e10
+    assert_almost_equal(val.float(), 1e10)
+    val = Null()
+    assert_equal(val.null(), Null())
+    val = Object()
+    assert_equal(val.object(), Object())
+    val = Array(1, 2, 3)
+    assert_equal(val.array(), Array(1, 2, 3))
+
+
+def test_pretty() raises:
+    var v = Value(parse_string="[123, 43564, false]")
+    var expected: String = """[
+    123,
+    43564,
+    false
+]"""
+    assert_equal(expected, write_pretty(v))
+
+    v = Value(parse_string='{"key": 123, "k2": null}')
+    expected = """{
+    "key": 123,
+    "k2": null
+}"""
+
+    assert_equal(expected, write_pretty(v))
+
+
+def test_repr_null() raises:
+    assert_equal(repr(Null()), "Null()")
+
+
+def test_repr_value_int() raises:
+    var v = Value(Int64(42))
+    assert_equal(repr(v), "SIMD[DType.int64, 1](42)")
+
+
+def test_repr_value_uint() raises:
+    var v = Value(UInt64(99))
+    assert_equal(repr(v), "SIMD[DType.uint64, 1](99)")
+
+
+def test_repr_value_float() raises:
+    var v = Value(Float64(3.14))
+    assert_equal(repr(v), "SIMD[DType.float64, 1](3.14)")
+
+
+def test_repr_value_string() raises:
+    var v = Value("hello")
+    assert_equal(repr(v), "'hello'")
+
+
+def test_repr_value_bool() raises:
+    assert_equal(repr(Value(True)), "True")
+    assert_equal(repr(Value(False)), "False")
+
+
+def test_repr_value_null() raises:
+    var v = Value(None)
+    assert_equal(repr(v), "Null()")
+
+
+def test_repr_value_array() raises:
+    var v: Value = [1, 2, 3]
+    assert_equal(
+        repr(v),
+        (
+            "Array(SIMD[DType.int64, 1](1), SIMD[DType.int64, 1](2),"
+            " SIMD[DType.int64, 1](3))"
+        ),
+    )
+
+
+def test_repr_value_object() raises:
+    var v: Value = {"key": 42}
+    assert_equal(repr(v), 'Object{"key":SIMD[DType.int64, 1](42)}')
+
+
+def test_booling() raises:
+    var a: Value = True
+    assert_true(a)
+    if not a:
+        raise Error("Implicit bool failed")
+
+    var trues = Array("some string", 123, 3.43)
+    for t in trues:
+        assert_true(t)
+
+    var falsies = Array("", 0, 0.0, False, Null(), None)
+    for f in falsies:
+        assert_false(f)
+
+
+def test_value_size() raises:
+    # Value is a Variant sized by its largest member (String/Object/Array,
+    # each 3 words) plus a discriminant. Every array slot and object entry
+    # holds a Value inline, so growing any member type taxes every parsed
+    # document. If this fails, a field was added to one of the member types
+    # — reconsider (see _ObjectParseIndex for the pattern to use instead).
+    assert_equal(size_of[Value](), 32)
+    assert_equal(size_of[Object](), 24)
+    assert_equal(size_of[Array](), 24)
+
+
+def main() raises:
+    TestSuite.discover_tests[__functions_in_module()]().run()
