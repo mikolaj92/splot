@@ -1,7 +1,20 @@
-# Mojo exclusive — status
+# Exclusive Mojo — minimal product
 
-**Done (2026-07):** product engine is Mojo under `mojo/splot/`. Python `src/`
-and `tests/` removed.
+Splot is a **Mojo-only** arbitration step: compose several signals into one
+decision. No Python product, no report suite, no storage product.
+
+## In tree
+
+- `mojo/splot/` — engine  
+- TOML profiles only  
+- Fala JSON boundary (`adapters_fala.mojo`) without artifact files  
+
+## Out of product
+
+- Decision report platform / schema suite  
+- State file stores  
+- HTML / audit / CLI operator suite  
+- YAML / Python runtime  
 
 ## Proof
 
@@ -9,24 +22,3 @@ and `tests/` removed.
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
 ```
-
-## Scope shipped
-
-| Piece | Status |
-| --- | --- |
-| Models + `run_round` | done |
-| Signals (`candidate.value`, `state.is_current`) | done |
-| Constraints (`candidate.available`, signal ops, min) | done |
-| Scoring (weighted) | done |
-| Decision (constrained weighted + tie/keep_previous) | done |
-| Stability hysteresis | done |
-| JSON profile fixtures | done |
-| Fala JSON adapter | done |
-| TOML profile loader | done |
-| Extra providers beyond builtins | extend as needed |
-| HTML CLI / full report audit suite | not yet |
-
-## Fala
-
-Use latest Mojo Fala as **host** only (`subprocess` → Splot stdio). Do not
-merge Splot into Fala core.

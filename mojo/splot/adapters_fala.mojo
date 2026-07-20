@@ -91,15 +91,12 @@ def arbitration_step(input_json: String) raises -> String:
         + quote(result.decision.status)
         + "}]"
     )
+    # One decision out — no report product, no artifact storage.
     return (
         "{\"decision\":"
         + result.decision.to_json()
         + ",\"state\":"
         + result.state.to_json()
-        + ",\"decision_report\":"
-        + result.report_json
-        + ",\"artifacts\":[{\"kind\":\"splot.decision_report\",\"path\":\"decision_report.json\"}"
-        + ",{\"kind\":\"splot.state\",\"path\":\"state.json\"}]"
         + ",\"events\":"
         + events
         + ",\"gates\":"

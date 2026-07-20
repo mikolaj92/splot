@@ -22,6 +22,6 @@ def main() raises:
     var out = arbitration_step(payload)
     _check(out.find("\"status\":\"selected\"") >= 0, "decision selected")
     _check(out.find("splot.decision_committed") >= 0, "event emitted")
-    _check(out.find("splot.decision_report") >= 0, "artifact descriptor")
     _check(out.find("\"selected_candidate_id\":\"a\"") >= 0, "winner a")
+    _check(out.find("decision_report") < 0, "no report product")
     print("splot fala stdio smoke ok")

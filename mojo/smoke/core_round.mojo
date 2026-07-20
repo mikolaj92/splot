@@ -36,7 +36,7 @@ def main() raises:
     var result = run_round(profile, candidates, SplotState(), "2026-01-01T00:00:00Z")
     _check(result.decision.status == "selected", "status selected")
     _check(result.decision.selected_candidate_id == "cam_a", "best live camera wins")
-    _check(result.report_json.find("splot.decision_report") >= 0, "report schema")
+    _check(result.report_json.find("\"status\":\"selected\"") >= 0, "result envelope")
     _check(result.state.previous_decision_json.find("cam_a") >= 0, "state updated")
 
     # Offline-only blocked → fallback

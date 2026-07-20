@@ -1,4 +1,4 @@
-name: Tests
+name: Layout
 
 on:
   push:
@@ -6,27 +6,19 @@ on:
   pull_request:
 
 jobs:
-  tests:
+  mojo-layout:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install package
-        run: python -m pip install .
-      - name: Run tests
-        run: python -m unittest discover -s tests
-      - name: Run examples
+      - name: Mojo-only product layout
         run: |
-          python -m splot.cli profile validate examples/profiles/player-camera-director
-          python -m splot.cli examples run camera --out /tmp/splot-camera-report.json
-          python -m splot.cli audit-report /tmp/splot-camera-report.json
-          python -m splot.cli examples run contract-compose
-          python -m splot.cli examples run route
-          python -m splot.cli examples run uncertainty
-          PROCESS_RUNTIME_ARTIFACT_DIR=/tmp/splot-fala-artifacts splot-fala-step < examples/fala-integration/stdin.json > /tmp/splot-fala-output.json
+          test -d mojo/splot
+          test -f mojo/splot/pipeline.mojo
+          test -f mojo/splot/profile.mojo
+          test -f mojo/splot/toml.mojo
+          test ! -d src
+          test ! -d tests
+          test ! -d schemas
+          ! find mojo examples -name '*.yaml' -o -name '*.yml' | grep -q .
+          ! find . -path ./vendor -prune -o -path ./.git -prune -o -path ./.pixi -prune -o -name '*.py' -print | grep -v '^\./vendor' | grep -q .
+          echo "layout ok: exclusive Mojo Splot (no Python product, no YAML)"

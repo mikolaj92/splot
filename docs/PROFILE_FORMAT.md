@@ -1,12 +1,4 @@
-# Profile Format (TOML only)
-
-A profile is a folder with `profile.toml` plus optional Markdown sidecars
-(`objective.md`, `signals.md`, …). Sidecars are documentation; the runtime
-loads **only** `profile.toml`.
-
-YAML is not supported.
-
-## Shape
+# Profile format (TOML only)
 
 ```toml
 version = 1
@@ -15,7 +7,6 @@ mode = "select_one"
 
 [objective]
 id = "best"
-description = "..."
 
 [[signals]]
 id = "visibility"
@@ -44,10 +35,4 @@ when_close = "keep_previous"
 when_constraints_block_all = "fallback"
 ```
 
-## Providers (native builtins)
-
-- `candidate.value` — payload field
-- `candidate.available` — live flag
-- `state.is_current` — previous selection bonus
-
-No free-form user code. Extend builtins in `mojo/splot/builtins.mojo`.
+Markdown sidecars in profile folders are optional documentation only.

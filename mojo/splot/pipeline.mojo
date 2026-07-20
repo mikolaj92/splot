@@ -388,41 +388,14 @@ def run_round(
     if decision.selected_candidate_id != obj_string(parse_json(state.previous_decision_json), "selected_candidate_id", ""):
         next_state.last_switch_at = now
 
-    var ranks = "["
-    var first = True
-    # sort copy for report
-    var ranked = evaluations.copy()
-    var n = len(ranked)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if ranked[j].score < ranked[j + 1].score:
-                var tmp = ranked[j].copy()
-                ranked[j] = ranked[j + 1].copy()
-                ranked[j + 1] = tmp^
-    for e in ranked:
-        if not first:
-            ranks += ","
-        ranks += (
-            "{\"candidate_id\":"
-            + quote(e.candidate_id)
-            + ",\"score\":"
-            + String(e.score)
-            + ",\"eligible\":"
-            + ("true" if e.eligible else "false")
-            + "}"
-        )
-        first = False
-    ranks += "]"
-
-    var report = (
-        "{\"schema\":\"splot.decision_report\",\"decision\":"
+    # Minimal result envelope (no report product, no storage).
+    var result_json = (
+        "{\"decision\":"
         + decision.to_json()
         + ",\"state\":"
         + next_state.to_json()
-        + ",\"evaluations\":"
-        + ranks
         + ",\"now\":"
         + quote(now)
         + "}"
     )
-    return RoundResult(decision^, next_state^, report)
+    return RoundResult(decision^, next_state^, result_json)
