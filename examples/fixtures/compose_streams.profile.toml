@@ -1,0 +1,32 @@
+version = 1
+id = "compose_streams"
+mode = "compose_one"
+
+[objective]
+id = "multi_stream_task"
+
+[[signals]]
+id = "relevance"
+provider = "candidate.value"
+field = "relevance"
+weight = 0.6
+prefer = "higher"
+
+[[signals]]
+id = "coverage"
+provider = "candidate.value"
+field = "coverage"
+weight = 0.4
+prefer = "higher"
+
+[[constraints]]
+id = "must_be_available"
+provider = "candidate.available"
+severity = "block"
+
+[decision]
+policy = "constrained_weighted_score"
+
+[compose]
+min_score = 0.3
+max_parts = 3

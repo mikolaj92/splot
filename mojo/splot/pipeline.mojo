@@ -1,8 +1,16 @@
-"""Evaluate candidates, decide, apply stability (select_one core)."""
+"""Fusion core: score host-supplied signals, constrain, commit, stabilize.
+
+Modes:
+  select_one   — commit one candidate id (default)
+  compose_one  — commit one lower-entropy multi-stream composition
+
+Does not run external evaluators. Payload fields are already filled by the host
+(LLM, heuristic, random, … — irrelevant here). Readers only map payload/state
+data via builtins or host-registered recipes.
+"""
 
 from std.collections import List, Dict
 from emberjson import Value
-from splot.builtins import candidate_available, candidate_value, state_is_current
 from splot.json_util import clamp01, nested, obj_float, obj_string, parse_json, quote
 from splot.models import (
     Candidate,
@@ -14,17 +22,22 @@ from splot.models import (
     SplotState,
 )
 from splot.normalize import normalize_signal, to_float_json
+from splot.registry import ReaderRegistry
 
 
 def _new_id(prefix: String) -> String:
-    # Deterministic-enough for smoke (no UUID in core): use content length + prefix.
     return prefix + "_mojo"
+
+
+def _default_registry() -> ReaderRegistry:
+    return ReaderRegistry.with_builtins()
 
 
 def build_signals(
     profile: Value,
     candidate: Candidate,
     state: SplotState,
+    registry: ReaderRegistry,
 ) raises -> List[Signal]:
     var out = List[Signal]()
     if not profile.is_object() or "signals" not in profile.object():
@@ -37,22 +50,13 @@ def build_signals(
             continue
         var cfg = item.copy()
         var sid = obj_string(cfg, "id")
+        # `provider` is a payload *reader* id, not an external evaluator.
         var provider = obj_string(cfg, "provider", "candidate.value")
         var prefer = obj_string(cfg, "prefer", "higher")
         var weight = obj_float(cfg, "weight", 1.0)
         var field = obj_string(cfg, "field", sid)
-        var raw: Float64 = 0.0
-        var value_json = "0"
-        if provider == "candidate.value":
-            raw = candidate_value(candidate, field)
-            value_json = String(raw)
-        elif provider == "state.is_current":
-            raw = state_is_current(candidate, state)
-            value_json = String(raw)
-        else:
-            # Unknown provider: zero signal
-            raw = 0.0
-            value_json = "0"
+        var raw = registry.read_signal(provider, candidate, field, state)
+        var value_json = String(raw)
         var normalized = normalize_signal(raw, prefer)
         out.append(Signal(sid, value_json, normalized, weight, prefer, 1.0))
     return out^
@@ -62,13 +66,14 @@ def apply_constraints(
     profile: Value,
     candidate: Candidate,
     signals: List[Signal],
+    registry: ReaderRegistry,
+    state: SplotState,
 ) raises -> List[ConstraintResult]:
     var out = List[ConstraintResult]()
     var by_id = Dict[String, Signal]()
     for s in signals:
         by_id[s.id] = s.copy()
 
-    # Signal min/max from signal configs
     if profile.is_object() and "signals" in profile.object() and profile.object()["signals"].is_array():
         for item in profile.object()["signals"].array():
             if not item.is_object():
@@ -118,10 +123,19 @@ def apply_constraints(
             var passed = True
             var reason = obj_string(cfg, "reason", cid)
             var penalty = 0.0
-            if provider == "candidate.available":
-                passed = candidate_available(candidate)
-                if not passed:
-                    reason = obj_string(cfg, "reason", "source is not live")
+            if provider != "":
+                var gate = registry.read_gate(provider, candidate, state)
+                if gate.handled:
+                    passed = gate.passed
+                    if not passed:
+                        if provider == "candidate.available":
+                            reason = obj_string(cfg, "reason", "source is not live")
+                        else:
+                            reason = obj_string(cfg, "reason", provider + " gate failed")
+                else:
+                    # Unknown unregistered gate provider: fail closed.
+                    passed = False
+                    reason = "unknown gate reader " + provider
             elif "signal" in cfg.object():
                 var sig_id = obj_string(cfg, "signal")
                 if sig_id in by_id:
@@ -158,9 +172,10 @@ def evaluate_candidate(
     profile: Value,
     candidate: Candidate,
     state: SplotState,
+    registry: ReaderRegistry,
 ) raises -> CandidateEvaluation:
-    var signals = build_signals(profile, candidate, state)
-    var constraints = apply_constraints(profile, candidate, signals)
+    var signals = build_signals(profile, candidate, state, registry)
+    var constraints = apply_constraints(profile, candidate, signals, registry, state)
     var total_weight: Float64 = 0.0
     var raw: Float64 = 0.0
     for s in signals:
@@ -195,14 +210,28 @@ def evaluate_all(
     profile: Value,
     candidates: List[Candidate],
     state: SplotState,
+    registry: ReaderRegistry = ReaderRegistry(),
 ) raises -> List[CandidateEvaluation]:
+    var reg = registry.copy()
     var out = List[CandidateEvaluation]()
     for c in candidates:
-        out.append(evaluate_candidate(profile, c, state))
+        out.append(evaluate_candidate(profile, c, state, reg))
     return out^
 
 
-def decide_from_evaluations(
+def _rank_by_score(eligible: List[CandidateEvaluation]) raises -> List[CandidateEvaluation]:
+    var ranked = eligible.copy()
+    var n = len(ranked)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if ranked[j].score < ranked[j + 1].score:
+                var tmp = ranked[j].copy()
+                ranked[j] = ranked[j + 1].copy()
+                ranked[j + 1] = tmp^
+    return ranked^
+
+
+def decide_select_one(
     profile: Value,
     evaluations: List[CandidateEvaluation],
     state: SplotState,
@@ -257,17 +286,7 @@ def decide_from_evaluations(
             "all candidates blocked",
         )
 
-    # rank by score
-    var ranked = eligible.copy()
-    # simple bubble sort
-    var n = len(ranked)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if ranked[j].score < ranked[j + 1].score:
-                var tmp = ranked[j].copy()
-                ranked[j] = ranked[j + 1].copy()
-                ranked[j + 1] = tmp^
-
+    var ranked = _rank_by_score(eligible)
     var best = ranked[0].copy()
     var margin: Float64 = 1.0
     if len(ranked) > 1:
@@ -332,12 +351,133 @@ def decide_from_evaluations(
     )
 
 
+def decide_compose_one(
+    profile: Value,
+    evaluations: List[CandidateEvaluation],
+    state: SplotState,
+) raises -> Decision:
+    """Commit one multi-stream composition from host-scored candidates."""
+    var objective = nested(profile, "objective")
+    var objective_id = obj_string(objective, "id", obj_string(profile, "id", "objective"))
+    var decision_cfg = nested(profile, "decision")
+    var policy = obj_string(decision_cfg, "policy", "constrained_weighted_score")
+    var compose_cfg = nested(profile, "compose")
+    var min_score = obj_float(compose_cfg, "min_score", 0.0)
+    var max_parts_f = obj_float(compose_cfg, "max_parts", 0.0)
+    var max_parts = Int(max_parts_f) if max_parts_f > 0.0 else 0
+
+    var eligible = List[CandidateEvaluation]()
+    for e in evaluations:
+        if policy == "weighted_score":
+            if e.score >= min_score:
+                eligible.append(e.copy())
+        elif e.eligible and e.score >= min_score:
+            eligible.append(e.copy())
+
+    if len(evaluations) == 0:
+        return Decision(
+            _new_id("decision"),
+            "no_candidate",
+            objective_id,
+            "",
+            0.0,
+            1.0,
+            "when_no_candidate",
+            "no candidates",
+        )
+    if len(eligible) == 0:
+        return Decision(
+            _new_id("decision"),
+            "fallback",
+            objective_id,
+            "",
+            0.0,
+            1.0,
+            "compose_no_eligible_parts",
+            "no streams met compose thresholds",
+        )
+
+    var ranked = _rank_by_score(eligible)
+    if max_parts > 0 and len(ranked) > max_parts:
+        var trimmed = List[CandidateEvaluation]()
+        var k = 0
+        while k < max_parts:
+            trimmed.append(ranked[k].copy())
+            k += 1
+        ranked = trimmed^
+
+    var primary = ranked[0].copy()
+    var parts = String("[")
+    var i = 0
+    var weight_sum: Float64 = 0.0
+    for e in ranked:
+        weight_sum += e.score
+    for e in ranked:
+        if i > 0:
+            parts += ","
+        var w = 0.0
+        if weight_sum > 0.0:
+            w = e.score / weight_sum
+        parts += (
+            "{\"id\":"
+            + quote(e.candidate_id)
+            + ",\"score\":"
+            + String(e.score)
+            + ",\"weight\":"
+            + String(w)
+            + ",\"eligible\":"
+            + ("true" if e.eligible else "false")
+            + "}"
+        )
+        i += 1
+    parts += "]"
+    var composed = (
+        "{\"mode\":\"compose_one\",\"primary_id\":"
+        + quote(primary.candidate_id)
+        + ",\"parts\":"
+        + parts
+        + ",\"part_count\":"
+        + String(len(ranked))
+        + "}"
+    )
+    return Decision(
+        _new_id("decision"),
+        "composed",
+        objective_id,
+        primary.candidate_id,
+        primary.score,
+        clamp01(1.0 - primary.score),
+        "compose_one_weighted_parts",
+        "composed "
+        + String(len(ranked))
+        + " streams; primary "
+        + primary.candidate_id,
+        "[]",
+        composed,
+    )
+
+
+def decide_from_evaluations(
+    profile: Value,
+    evaluations: List[CandidateEvaluation],
+    state: SplotState,
+) raises -> Decision:
+    var mode = obj_string(profile, "mode", "select_one")
+    if mode == "compose_one" or mode == "compose":
+        return decide_compose_one(profile, evaluations, state)
+    return decide_select_one(profile, evaluations, state)
+
+
 def apply_stability(
     profile: Value,
     evaluations: List[CandidateEvaluation],
     state: SplotState,
     decision: Decision,
 ) raises -> Decision:
+    var mode = obj_string(profile, "mode", "select_one")
+    # Stability homeostat applies to select_one stickiness; compose recomputes parts each round.
+    if mode == "compose_one" or mode == "compose":
+        return decision.copy()
     var stab = nested(profile, "stability")
     var policy = obj_string(stab, "policy", "none")
     if policy == "none" or decision.status != "selected":
@@ -367,8 +507,43 @@ def apply_stability(
                 1.0 - previous_score,
                 "keep_previous_hysteresis",
                 "score margin below min_improvement",
+                decision.warnings_json,
+                decision.composed_json,
             )
     return decision.copy()
+
+
+def evaluations_to_json(evaluations: List[CandidateEvaluation]) -> String:
+    var out = String("[")
+    var i = 0
+    for e in evaluations:
+        if i > 0:
+            out += ","
+        out += e.to_json()
+        i += 1
+    out += "]"
+    return out
+
+
+def build_envelope_json(
+    decision: Decision,
+    state: SplotState,
+    now: String,
+    evaluations_json: String,
+    include_evaluations: Bool = True,
+) -> String:
+    var base = (
+        "{\"decision\":"
+        + decision.to_json()
+        + ",\"state\":"
+        + state.to_json()
+        + ",\"now\":"
+        + quote(now)
+    )
+    if include_evaluations:
+        base += ",\"evaluations\":" + evaluations_json
+    base += "}"
+    return base
 
 
 def run_round(
@@ -376,26 +551,24 @@ def run_round(
     candidates: List[Candidate],
     state: SplotState,
     now: String = "2026-01-01T00:00:00Z",
+    registry: ReaderRegistry = ReaderRegistry(),
+    include_evaluations: Bool = True,
 ) raises -> RoundResult:
-    var evaluations = evaluate_all(profile, candidates, state)
+    var reg = registry.copy()
+    var evaluations = evaluate_all(profile, candidates, state, reg)
     var decision = decide_from_evaluations(profile, evaluations, state)
     decision = apply_stability(profile, evaluations, state, decision)
 
-    # Update state
     var next_state = state.copy()
     next_state.previous_decision_json = decision.to_json()
     next_state.last_decision_at = now
-    if decision.selected_candidate_id != obj_string(parse_json(state.previous_decision_json), "selected_candidate_id", ""):
+    if decision.selected_candidate_id != obj_string(
+        parse_json(state.previous_decision_json), "selected_candidate_id", ""
+    ):
         next_state.last_switch_at = now
 
-    # Minimal result envelope (no report product, no storage).
-    var result_json = (
-        "{\"decision\":"
-        + decision.to_json()
-        + ",\"state\":"
-        + next_state.to_json()
-        + ",\"now\":"
-        + quote(now)
-        + "}"
+    var evals_json = evaluations_to_json(evaluations)
+    var result_json = build_envelope_json(
+        decision, next_state, now, evals_json, include_evaluations
     )
-    return RoundResult(decision^, next_state^, result_json)
+    return RoundResult(decision^, next_state^, result_json, evals_json)

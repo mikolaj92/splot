@@ -1,5 +1,5 @@
-# Routing Example
+# Routing example
 
-Routes are plain candidates. The chosen candidate action is returned as a
-machine-readable route decision.
-
+Routes are plain **candidates**. Host-supplied signals score each route; Splot
+commits one machine-readable choice. How the scores were produced is out of
+scope for Splot.

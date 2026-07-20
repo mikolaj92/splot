@@ -1,4 +1,4 @@
-"""Load Splot profiles from TOML only."""
+"""Load Splot fusion profiles from TOML only (policy, not evaluators)."""
 
 from std.pathlib import Path
 from emberjson import Value

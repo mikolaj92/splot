@@ -1,0 +1,16 @@
+version = 1
+id = "host_focus_select"
+mode = "select_one"
+
+[objective]
+id = "best_focus"
+
+[[signals]]
+id = "focus"
+provider = "host.focus"
+field = "focus"
+weight = 1.0
+prefer = "higher"
+
+[decision]
+policy = "constrained_weighted_score"

@@ -1,4 +1,7 @@
-"""Core arbitration smoke: camera-style candidates + fixture profile."""
+"""Core fusion smoke: camera-style candidates + fixture profile.
+
+Payload numbers stand in for any host evaluator (detector, LLM, random, …).
+"""
 
 from std.collections import List
 from splot.models import Candidate, SplotState

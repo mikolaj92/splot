@@ -1,56 +1,83 @@
 # Splot
 
-**Version 0.3.1** — exclusive Mojo + Fala subprocess step.
+**Version 0.3.2** — exclusive Mojo + optional Fala subprocess step.
 
 **Splot is a fully Mojo library.** There is no Python runtime, no YAML, no
 database, and no report store.
 
-It answers one problem:
+## One job
 
-> Given several partial, noisy, possibly conflicting **signals** about a set of
-> **candidates**, pick **one** decision — with a short reason and optional
-> stickiness so the choice does not thrash every tick.
+> **Many high-entropy streams of communicates in → one lower-entropy commitment
+> out.**
 
-Think of it as a small **arbitration / fusion organ**: many communicates in,
-one committed selection out.
+The name *splot* is Polish for an interweaving. Splot is a **domain-agnostic,
+evaluator-agnostic fusion organ**: it does not manage sources, run models, or
+decode media. It fuses already-produced signals into **one** committed result
+the host can act on — with optional stickiness so the output does not thrash
+every tick.
 
 ```text
-candidates + signals (from payloads)
-        │
-        ▼
-   weight & normalize
-        │
-        ▼
-   constraints (block / warn / penalize)
-        │
-        ▼
-   rank & choose one
-        │
-        ▼
-   optional hysteresis (keep previous if the gain is tiny)
-        │
-        ▼
-   decision { status, selected_id, confidence, reason }
+  stream / candidate ₁   (signals from any evaluator)
+  stream / candidate ₂
+  …
+  stream / candidate ₙ
+              │
+              ▼
+     weight · normalize · constrain
+              │
+              ▼
+     rank & commit one
+              │
+              ▼
+     optional hysteresis (homeostat)
+              │
+              ▼
+     decision { status, selected_id, confidence, reason }
 ```
+
+Who produced a signal — **LLM, simple algorithm, sensor, human, or random** —
+is irrelevant. Splot only sees the communicate shape (payload fields + profile
+rules).
 
 ## What it is for
 
-| Use | Example |
-| --- | --- |
-| Multi-camera / multi-sensor pick | several sources → one “best live view” |
-| Route or option selection | several options → one allowed choice |
-| Any host that needs fusion | feed candidates each tick, get one id back |
+| Use | High-entropy in | Lower-entropy out |
+| --- | --- | --- |
+| Multi-camera / multi-sensor | 5 camera streams, each scored “player visible?” by *whatever* | one live stream id to switch to |
+| Multi-modal tasking | RAG, images, book, docs, prompt, goal as parallel streams | one committed task / choice the host can execute |
+| Option / route pick | several options with partial scores | one allowed choice |
+| Any host fusion tick | candidates + precomputed signals | one id (and reason) per round |
 
 Typical host: **Fala** (or any process that can run a Mojo program / JSON step).
-Splot does **not** import Fala. Fala (or you) owns scheduling, journals, and
-persistence. Splot only **computes the decision**.
+Splot does **not** import Fala. The host owns scheduling, evaluators, journals,
+and persistence. Splot only **fuses and commits**.
 
 ## What it is not
 
-- Not a workflow engine, queue, or web server  
-- Not a report / audit / HTML product  
-- Not a state database (optional previous-decision JSON is enough for stability)  
-- Not a Python package  
+- **Not a management or orchestration product** (no source registry UI, no
+  workflow engine, no queue, no web server)
+- **Not an evaluator** — it does not call LLMs, run CV, or invent scores
+- **Not domain-specific** — no video codecs, no RAG stack, no document parsers
+- **Not a report / audit / HTML product**
+- **Not a state database** (optional previous-decision JSON is enough for
+  stability)
+- **Not a Python package**
+
+## Boundaries (hard)
+
+| Outside Splot (host / effector) | Inside Splot |
+| --- | --- |
+| Producing signals (LLM, heuristic, random, …) | Reading signal fields from candidate payloads |
+| Domain meaning of a field (`visibility`, `relevance`) | Weights, normalize, constraints, rank, hysteresis |
+| Streaming media or tokens | One fusion **round** → one commitment |
+| Persistence, journals, multi-process schedule | Optional previous decision in `state` |
+
+**Evaluator-agnostic:** any function may fill payload numbers. Swapping random
+for an LLM does not require a Splot code path change — only different numbers
+in the same fields.
+
+**Domain-agnostic:** cameras and multi-modal AI use the same contract:
+candidates + profile → decision.
 
 ## Fully Mojo
 
@@ -65,7 +92,7 @@ persistence. Splot only **computes the decision**.
 mojo/splot/     engine (+ step_main for host entry)
 mojo/smoke/     gates
 examples/       TOML profiles & fixtures
-docs/           short design notes
+docs/           design notes (intent + shipped scope)
 vendor/         EmberJson
 tools/          mojo_run.sh, splot_step.sh (Fala effector)
 ```
@@ -97,13 +124,14 @@ mise exec -- pixi run splot-integration
 
 Both should print `… smoke ok`.
 
-## Contract
+## Contract (0.3.x shipped)
 
 ### Input
 
-1. **Profile** — TOML file (weights, constraints, decision & stability policy).  
-2. **Candidates** — each has `id` + JSON `payload` (signal fields live here).  
-3. **State** (optional) — previous decision, for hysteresis / stickiness.  
+1. **Profile** — TOML (weights, constraints, decision & stability policy).
+2. **Candidates** — each has `id` + JSON `payload` (signal fields live here;
+   **already evaluated** by the host).
+3. **State** (optional) — previous decision, for hysteresis / stickiness.
 4. **now** (optional) — timestamp string for the host clock.
 
 ### Output
@@ -126,8 +154,21 @@ Both should print `… smoke ok`.
 }
 ```
 
-Statuses you will see in normal use: `selected`, `fallback`,
+Statuses in normal use: `selected`, `composed`, `fallback`,
 `needs_human_decision`, and similar uncertainty outcomes from the profile.
+
+**Shipped modes**
+
+| Mode | Commitment |
+| --- | --- |
+| `select_one` (default) | one candidate id |
+| `compose_one` | one multi-stream composition (`decision.composed` parts + primary id) |
+
+`run_round` returns a host-facing envelope with `decision`, `state`, and
+**`evaluations`** (per-candidate scores/signals/constraints). The Fala/subprocess
+step stays **thin** (decision + state + events + gates) unless the request sets
+`include_evaluations` / `detail` to true. See
+[`docs/CONCEPTUAL_MODEL.md`](docs/CONCEPTUAL_MODEL.md).
 
 ## Profile (TOML only)
 
@@ -162,10 +203,15 @@ policy = "hysteresis"
 min_improvement = 0.15
 ```
 
+Signal **values** are host-supplied. Profile `provider` names only describe how
+Splot **reads** the payload (not how scores were computed).
+
 See [`docs/PROFILE_FORMAT.md`](docs/PROFILE_FORMAT.md) and
 `examples/profiles/` / `examples/fixtures/`.
 
-### Built-in providers
+### Payload readers (not evaluators)
+
+Builtins (always available):
 
 | Name | Role |
 | --- | --- |
@@ -173,7 +219,24 @@ See [`docs/PROFILE_FORMAT.md`](docs/PROFILE_FORMAT.md) and
 | `candidate.available` | Live / dead gate (block if false) |
 | `state.is_current` | Bonus if this candidate was selected last time |
 
-No free-form user code. Extend builtins in `mojo/splot/builtins.mojo` if needed.
+**Host-registered readers** map additional `provider` names without forking
+core. Recipes only combine already-supplied payload fields (e.g.
+`product:player,ball`). No free-form user code, no LLM/CV plugins.
+
+```mojo
+from splot.registry import ReaderRegistry
+var reg = ReaderRegistry.with_builtins()
+reg.register_signal_reader("host.focus", "product:player,ball")
+var result = run_round(profile, candidates, SplotState(), registry=reg)
+```
+
+On `fusion_step` JSON, optional:
+
+```json
+"readers": { "signals": { "host.focus": "product:player,ball" } }
+```
+
+**Producing** field values stays with the host evaluator of choice.
 
 ## Use from Mojo
 
@@ -184,26 +247,29 @@ from splot.models import Candidate, SplotState
 from splot.pipeline import run_round
 
 var profile = load_profile_toml("examples/fixtures/player_camera_director.profile.toml")
+# Host already ran any evaluators; payloads carry the signals.
 var candidates = List[Candidate]()
 candidates.append(Candidate("a", "{\"visibility\":0.9,\"available\":true}"))
 candidates.append(Candidate("b", "{\"visibility\":0.5,\"available\":true}"))
 var result = run_round(profile, candidates, SplotState())
 # result.decision.status, result.decision.selected_candidate_id
+# result.report_json / result.evaluations_json — host audit detail
 ```
 
 ## Use with Fala (optional)
 
 Splot stays import-free toward Fala. A Fala effector can pass JSON and get a
-decision back (`mojo/splot/adapters_fala.mojo` — `arbitration_step` /
-`run_stdio_line`). Mapping notes: [`docs/FALA_INTEGRATION.md`](docs/FALA_INTEGRATION.md).
+decision back (`mojo/splot/adapters_fala.mojo` — `fusion_step` / stdio line;
+`arbitration_step` remains as a historical alias). Mapping notes:
+[`docs/FALA_INTEGRATION.md`](docs/FALA_INTEGRATION.md).
 
-Fala owns journals and process host. Splot only fuses signals into one choice.
+Fala owns journals, process host, and **evaluators**. Splot only fuses signals
+into one commitment.
 
-## Theory (optional reading)
+## Theory
 
-The name *splot* is Polish for an interweaving: many communicates in, one
-decision out. That matches Mazur’s correlator / homeostat picture of reducing
-uncertainty. Background: [`docs/CONCEPTUAL_MODEL.md`](docs/CONCEPTUAL_MODEL.md).
+Background and the split between **design intent** and **0.3.x shipped scope**:
+[`docs/CONCEPTUAL_MODEL.md`](docs/CONCEPTUAL_MODEL.md).
 
 ## License
 

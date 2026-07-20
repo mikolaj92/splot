@@ -1,6 +1,7 @@
 """Strict TOML frontend for Splot profiles (manifest-safe subset).
 
-No YAML path. Returns EmberJson Value for the arbitration pipeline.
+No YAML path. Returns EmberJson Value for the fusion pipeline (policy only —
+not domain or evaluator config).
 """
 
 from std.collections import List

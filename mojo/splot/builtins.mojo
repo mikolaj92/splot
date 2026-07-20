@@ -1,4 +1,8 @@
-"""Builtin profile providers (no free-form user code)."""
+"""Builtin payload readers for profile signals/constraints.
+
+These only *read* host-supplied candidate/state fields. They are not evaluators
+(LLM, CV, heuristics, random stay outside Splot). No free-form user code.
+"""
 
 from emberjson import Value
 from splot.json_util import obj_string, parse_json, quote

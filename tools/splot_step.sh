@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Fala-compatible subprocess entry for Splot 0.3+ (Mojo).
+# Fala-compatible subprocess entry for Splot 0.3+ (Mojo fusion step).
+# Host fills candidate payload signals; this only runs one fusion round.
 # Expects Fala effector env (FALA_EFFECTOR_*) or SPLOT_REQUEST_PATH.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"

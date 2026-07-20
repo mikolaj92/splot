@@ -1,4 +1,4 @@
-"""CLI entry: run one arbitration step from a JSON request file or stdin path.
+"""CLI entry: run one fusion step from a JSON request file or stdin path.
 
 Usage:
   mojo run -I mojo -I vendor/EmberJson mojo/splot/step_main.mojo <request.json>
@@ -6,12 +6,14 @@ Usage:
 
 When FALA_EFFECTOR_OUTPUT_DIR is set (Fala subprocess contract), writes
 output/result.json with the step result object.
+
+The host must already have filled candidate payload signals (any evaluator).
 """
 
 from std.pathlib import Path
 from std.os import getenv
 from emberjson import Value, to_string
-from splot.adapters_fala import arbitration_step
+from splot.adapters_fala import fusion_step
 from splot.json_util import parse_json
 
 
@@ -47,21 +49,21 @@ def main() raises:
                 var man = parse_json(man_text)
                 if man.is_object() and "input" in man.object():
                     var inp = man.object()["input"].copy()
-                    # Prefer input as the arbitration payload when it already looks like one.
+                    # Prefer input as the fusion payload when it already looks like one.
                     if inp.is_object() and (
                         "profile" in inp.object()
                         or "candidates" in inp.object()
                         or "carriers" in inp.object()
                     ):
-                        var out = arbitration_step(to_string(inp))
+                        var out = fusion_step(to_string(inp))
                         _write_result(out)
                         return
-                # Last resort: use embedded defaults from fixture path relative to cwd.
+                # Last resort: fixture path relative to cwd.
                 path = "examples/fixtures/player_camera_director.request.json"
 
     if path == "":
         path = "examples/fixtures/player_camera_director.request.json"
 
     var text = Path(path).read_text()
-    var out = arbitration_step(text)
+    var out = fusion_step(text)
     _write_result(out)

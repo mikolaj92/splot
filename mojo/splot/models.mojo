@@ -1,4 +1,10 @@
-"""Core Splot records (JSON-friendly)."""
+"""Core Splot records (JSON-friendly fusion types).
+
+Candidate payloads carry host-evaluated signals. CandidateEvaluation is the
+in-round scoring result inside Splot — not an external “evaluator” product.
+RoundResult.report_json is the host-facing envelope (decision + optional detail),
+not a DecisionReport suite or storage product.
+"""
 
 from std.collections import List, Dict
 from splot.json_util import quote
@@ -93,6 +99,25 @@ struct Signal(Copyable, Movable):
         self.confidence = copy.confidence
         self.contribution = copy.contribution
 
+    def to_json(self) -> String:
+        return (
+            "{\"id\":"
+            + quote(self.id)
+            + ",\"value\":"
+            + self.value_json
+            + ",\"normalized\":"
+            + String(self.normalized)
+            + ",\"weight\":"
+            + String(self.weight)
+            + ",\"prefer\":"
+            + quote(self.prefer)
+            + ",\"confidence\":"
+            + String(self.confidence)
+            + ",\"contribution\":"
+            + String(self.contribution)
+            + "}"
+        )
+
 
 struct ConstraintResult(Copyable, Movable):
     var id: String
@@ -121,6 +146,21 @@ struct ConstraintResult(Copyable, Movable):
         self.passed = copy.passed
         self.reason = copy.reason
         self.penalty = copy.penalty
+
+    def to_json(self) -> String:
+        return (
+            "{\"id\":"
+            + quote(self.id)
+            + ",\"severity\":"
+            + quote(self.severity)
+            + ",\"passed\":"
+            + ("true" if self.passed else "false")
+            + ",\"reason\":"
+            + quote(self.reason)
+            + ",\"penalty\":"
+            + String(self.penalty)
+            + "}"
+        )
 
 
 struct CandidateEvaluation(Copyable, Movable):
@@ -156,6 +196,59 @@ struct CandidateEvaluation(Copyable, Movable):
         self.rejected_reasons = copy.rejected_reasons.copy()
         self.human_decisions = copy.human_decisions.copy()
 
+    def to_json(self) -> String:
+        var sigs = String("[")
+        var i = 0
+        for s in self.signals:
+            if i > 0:
+                sigs += ","
+            sigs += s.to_json()
+            i += 1
+        sigs += "]"
+        var cons = String("[")
+        i = 0
+        for c in self.constraints:
+            if i > 0:
+                cons += ","
+            cons += c.to_json()
+            i += 1
+        cons += "]"
+        var warns = String("[")
+        i = 0
+        for w in self.warnings:
+            if i > 0:
+                warns += ","
+            warns += quote(w)
+            i += 1
+        warns += "]"
+        var rejected = String("[")
+        i = 0
+        for r in self.rejected_reasons:
+            if i > 0:
+                rejected += ","
+            rejected += quote(r)
+            i += 1
+        rejected += "]"
+        return (
+            "{\"candidate_id\":"
+            + quote(self.candidate_id)
+            + ",\"eligible\":"
+            + ("true" if self.eligible else "false")
+            + ",\"score\":"
+            + String(self.score)
+            + ",\"raw_score\":"
+            + String(self.raw_score)
+            + ",\"signals\":"
+            + sigs
+            + ",\"constraints\":"
+            + cons
+            + ",\"warnings\":"
+            + warns
+            + ",\"rejected_reasons\":"
+            + rejected
+            + "}"
+        )
+
 
 struct Decision(Copyable, Movable):
     var id: String
@@ -167,6 +260,8 @@ struct Decision(Copyable, Movable):
     var policy_reason: String
     var explanation: String
     var warnings_json: String
+    # Structured multi-stream commitment (compose_one); JSON null when unused.
+    var composed_json: String
 
     def __init__(
         out self,
@@ -179,6 +274,7 @@ struct Decision(Copyable, Movable):
         policy_reason: String = "",
         explanation: String = "",
         warnings_json: String = "[]",
+        composed_json: String = "null",
     ):
         self.id = id
         self.status = status
@@ -189,6 +285,7 @@ struct Decision(Copyable, Movable):
         self.policy_reason = policy_reason
         self.explanation = explanation
         self.warnings_json = warnings_json
+        self.composed_json = composed_json
 
     def __init__(out self, *, copy: Self):
         self.id = copy.id
@@ -200,6 +297,7 @@ struct Decision(Copyable, Movable):
         self.policy_reason = copy.policy_reason
         self.explanation = copy.explanation
         self.warnings_json = copy.warnings_json
+        self.composed_json = copy.composed_json
 
     def to_json(self) -> String:
         var sel = "null"
@@ -224,6 +322,8 @@ struct Decision(Copyable, Movable):
             + quote(self.explanation)
             + ",\"warnings\":"
             + self.warnings_json
+            + ",\"composed\":"
+            + self.composed_json
             + "}"
         )
 
@@ -270,13 +370,22 @@ struct RoundResult(Copyable, Movable):
     var decision: Decision
     var state: SplotState
     var report_json: String
+    var evaluations_json: String
 
-    def __init__(out self, decision: Decision, state: SplotState, report_json: String):
+    def __init__(
+        out self,
+        decision: Decision,
+        state: SplotState,
+        report_json: String,
+        evaluations_json: String = "[]",
+    ):
         self.decision = decision.copy()
         self.state = state.copy()
         self.report_json = report_json
+        self.evaluations_json = evaluations_json
 
     def __init__(out self, *, copy: Self):
         self.decision = copy.decision.copy()
         self.state = copy.state.copy()
         self.report_json = copy.report_json
+        self.evaluations_json = copy.evaluations_json

@@ -1,6 +1,6 @@
 [workspace]
 name = "splot"
-version = "0.3.1"
+version = "0.3.2"
 channels = ["https://conda.modular.com/max-nightly", "conda-forge"]
 platforms = ["osx-arm64"]
 
@@ -12,4 +12,6 @@ core-round = "./tools/mojo_run.sh mojo/smoke/core_round.mojo"
 fala-stdio = "./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo"
 # One-shot step entry (fixture request → decision on stdout).
 step-fixture = "env SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json ./tools/splot_step.sh"
-full-smoke = "pixi run core-round && pixi run fala-stdio"
+host-readers = "./tools/mojo_run.sh mojo/smoke/host_readers.mojo"
+compose-envelope = "./tools/mojo_run.sh mojo/smoke/compose_envelope.mojo"
+full-smoke = "pixi run core-round && pixi run fala-stdio && pixi run host-readers && pixi run compose-envelope"

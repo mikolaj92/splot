@@ -1,6 +1,6 @@
-"""Fala adapter boundary smoke (JSON step)."""
+"""Fala adapter boundary smoke (JSON fusion step)."""
 
-from splot.adapters_fala import arbitration_step
+from splot.adapters_fala import fusion_step, arbitration_step
 
 
 def _check(ok: Bool, msg: String) raises:
@@ -19,9 +19,12 @@ def main() raises:
         + "\"now\":\"2026-01-01T12:00:00Z\""
         + "}"
     )
-    var out = arbitration_step(payload)
+    var out = fusion_step(payload)
     _check(out.find("\"status\":\"selected\"") >= 0, "decision selected")
     _check(out.find("splot.decision_committed") >= 0, "event emitted")
     _check(out.find("\"selected_candidate_id\":\"a\"") >= 0, "winner a")
     _check(out.find("decision_report") < 0, "no report product")
+    # Historical name stays wired for older Fala hosts.
+    var compat = arbitration_step(payload)
+    _check(compat.find("\"selected_candidate_id\":\"a\"") >= 0, "arbitration_step alias")
     print("splot fala stdio smoke ok")

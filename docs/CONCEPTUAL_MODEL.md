@@ -1,82 +1,173 @@
 # Conceptual Model
 
-Splot is domain-agnostic. A camera, document, model output, sensor, queue item,
-or human note can all be represented as sources, observations, evidence, and
-candidates. The core never imports domain libraries.
+Splot is a **generic fusion organ**: many high-entropy streams of communicates
+in, one lower-entropy commitment out. It is **domain-agnostic** and
+**evaluator-agnostic**. The core never imports domain libraries and never runs
+an evaluation function.
 
-## Theoretical Foundation: Mazur's Cybernetics
+## Design intent (what Splot is for)
 
-Splot is designed as a cybernetic mechanism in the tradition of Marian Mazur,
-founder of the Polish school of cybernetics. Two of his works anchor the
-design: the qualitative theory of information (*Jakościowa teoria informacji*,
-1970) and the theory of autonomous systems (*Cybernetyczna teoria układów
-samodzielnych*, 1966). The runtime's single job: accept many communicates and
-emit one decision signal with minimized entropy, while recording the
-uncertainty that remains and why the decision was committed. (One precision:
-Mazur's qualitative theory deliberately describes information without
-Shannon's probabilities — as transformations between communicates. Splot
-borrows the entropy shorthand from the wider cybernetic tradition, and Mazur's
-vocabulary for everything else.)
+```text
+  stream₁  stream₂  …  streamₙ     high entropy, noise, conflict, partial views
+       \      |      /
+        \     |     /
+         ─────┼─────
+              ▼
+            SPLOT                 fuse · constrain · stabilize · commit
+              ▼
+         one stream / one communicate     lower entropy
+```
 
-This is why the runtime is constructed the way it is:
+### Examples (same mechanism)
 
-- **Waves** carry communicates. Distortion (loss, noise, bias) is first-class:
-  Splot tracks it via wave `reliability`, per-signal `confidence`, `stale_sources`,
-  disagreement on `reduce`, source reliability feedback, and explicit conflicts
-  in belief. Splot core does not define a `Projection` type — that is a
-  carrier-layer concern (Fala).
-- **Evidence and belief** are the correlator (korelator) of an autonomous
-  system: incoming communicates are registered, correlated against each other
-  and against history, and condensed into a belief state with explicit
-  uncertainty, conflicts, and reliability.
-- **Reliability and stale sources** exist because Mazur's information theory
-  treats distortion as first-class: communicates can transinform (faithfully),
-  pseudo-inform, or disinform. A mechanism that arbitrates signals must track
-  how much each source can be trusted, not only what it says. Redaction is
-  separate: it protects the audit trace (DecisionReport) from leaking sensitive
-  values when the trace is exported or fed to other systems.
-- **Constraints, verifiers, and human-decision escalation** implement control
-  in the system's own interest: an autonomous system (układ samodzielny) does
-  not merely react — it protects itself. Blocking, warning, penalizing, and
-  escalating to a human are that protection.
-- **Stability rules** (hysteresis, cooldown, min-hold, debounce, switching
-  cost) are the homeostat: they keep the mechanism in functional equilibrium
-  and prevent the output signal from oscillating faster than the world it
-  controls, which would re-inject entropy downstream.
-- **Decision and feedback** close the loop through the effectors: the
-  committed decision acts, and feedback (sprzężenie zwrotne) returns as new
-  observations for the next round.
-- **The trace** (`DecisionReport`) makes the uncertainty accounting auditable.
-  A mechanism that only outputs a decision asserts its entropy reduction; a
-  mechanism that outputs a replayable report shows its work — every input,
-  score, constraint, and the remaining uncertainty can be inspected and
-  replayed.
+1. **Live video director**  
+   Five camera streams. Something outside Splot (LLM, detector, heuristic, or
+   even random) scores each frame or tick — e.g. “player visible?”, “ball in
+   frame?”. Splot fuses those signals and commits **one** stream id so the host
+   can switch the output feed without thrashing.
 
-The framing changes nothing about how the code executes. It exists so that a
-human or an agent reading this codebase understands the intent behind each
-stage rather than treating the pipeline as arbitrary structure.
+2. **Multi-modal tasking**  
+   Parallel streams: RAG hits, images, a book chapter, docs, a user prompt, a
+   goal. Outside Splot, any evaluators attach signals (relevance, coverage,
+   conflict, freshness, …). Splot commits **one** lower-entropy outcome the host
+   can act on (e.g. which option to take, or — in a future compose mode — the
+   structure of a single task communicate).
+
+The camera metaphor is only an example. The technical concept is **stateful
+reduction of uncertainty across communicates**, not camera control and not
+AI-stack management.
+
+### Hard boundaries
+
+| Splot does | Splot does not |
+| --- | --- |
+| Fuse host-supplied signals under a profile | Manage sources, queues, or workflows |
+| Commit one result per round (with stability) | Call LLMs, CV, RAG, or “the evaluator” |
+| Stay ignorant of what a field *means* | Decode video, parse PDFs, embed text |
+| Optional stickiness so output does not oscillate | Own persistence, audit HTML, or ops UI |
+
+**Evaluator-agnostic:** the function that produced a signal may be an LLM, a
+three-line algorithm, a human click, or `random()`. Splot does not branch on
+evaluator type. It only sees communicates (payload fields + optional reliability
+metadata the host chooses to supply).
+
+**Domain-agnostic:** a camera id, a document chunk, a model draft, a route, or a
+queue item are all representable as candidates (or waves) with payloads. The
+core has no domain types.
+
+Splot is **not** an explicit management or arbitration *product*. “Arbitration”
+in older wording only meant “pick/commit under rules” — not admin, not
+orchestration.
+
+## Theoretical foundation (Mazur)
+
+Splot is framed in the tradition of Marian Mazur (Polish school of cybernetics):
+qualitative information theory (*Jakościowa teoria informacji*, 1970) and
+autonomous systems (*Cybernetyczna teoria układów samodzielnych*, 1966).
+
+Runtime intent: accept many communicates and emit **one** decision signal with
+**reduced** entropy, while remaining honest about residual uncertainty and why
+the commitment was made.
+
+Precision: Mazur’s qualitative theory describes information as transformations
+between communicates, not as Shannon probabilities. Splot borrows the entropy
+shorthand from the wider cybernetic tradition and Mazur’s vocabulary for the
+rest (correlator, homeostat, feedback).
+
+| Idea | Role in Splot |
+| --- | --- |
+| **Waves / communicates** | Carriers of partial information from streams (host-owned media; Splot sees signals) |
+| **Correlator (korelator)** | Fuse signals across candidates; optional richer belief is design target |
+| **Distortion** | Reliability, stale, confidence — first-class *when the host supplies them* |
+| **Homeostat** | Stability rules (hysteresis, close margin, keep previous) so the output does not re-inject entropy by thrashing |
+| **Feedback** | Committed decision acts via host effectors; new observations enter the next round |
+| **Self-protection** | Constraints (block / warn / penalize / escalate) — profile policy, not a management console |
 
 ## Concepts
 
-- Wave: a source or carrier of partial information.
-- Observation: a concrete reading, fragment, event, or metric.
-- Evidence: interpreted support for or against a candidate.
-- Belief: current state, uncertainty, history, and reliability.
-- Candidate: something Splot may choose, route, compose, defer, or reject.
-- Constraint: a profile rule that blocks, warns, asks a human, or penalizes.
-- Verifier: a stronger registered check.
-- Policy: the arbitration behavior.
-- Stability: rules that prevent thrashing and premature switching.
-- Decision: committed result.
-- Feedback: information returned after execution.
-- Trace: the machine-readable decision report.
+- **Stream / wave** — a source or carrier of partial information (camera feed,
+  RAG channel, doc stream, prompt, …). Media stays with the host.
+- **Communicate / observation** — a concrete reading at a moment (metrics in a
+  payload, not the raw video/token bytes).
+- **Candidate** — something Splot may commit to (select, and later optionally
+  compose into / defer / reject).
+- **Signal** — a scalar (or flag) Splot reads from the candidate payload under
+  the profile. **Origin of the number is out of scope.**
+- **Profile** — declarative fusion policy: objective, weights, constraints,
+  decision and stability rules. No domain code, no evaluator code.
+- **Constraint** — block / warn / penalize / ask human — protection of the
+  commitment, not “source management.”
+- **Policy** — how eligible candidates are ranked and chosen.
+- **Stability** — homeostat: hysteresis and related rules against thrashing.
+- **Decision / commitment** — the single lower-entropy result for this round.
+- **State** — minimal memory (e.g. previous decision) so stability can work.
+- **Feedback** — host applies the decision; later rounds see new signals.
 
-The camera/director metaphor is only one example. The technical concept is
-stateful information arbitration.
+Optional richer notions (**evidence**, **belief**, full **trace/report**,
+**verifiers** as registered checks) belong to the design target for deeper
+uncertainty accounting. They are **not** required to understand or use the
+0.3.x fusion loop.
 
-Every round now emits:
+## Shipped vs design target
 
-- candidate evaluations with signals, scores, constraints, and verifier results
-- evidence, either from registered builders or signal-derived defaults
-- belief snapshot with conflicts, stale sources, reliability, and history
-- decision report suitable for replay, debugging, and audit
+Documentation used to describe a rich belief / DecisionReport surface in the
+present tense while the Mojo product was intentionally slim. This section is
+the honest split.
+
+### Shipped in 0.3.x+ (Mojo product)
+
+- TOML profile + candidates with JSON payloads
+- Builtin **payload readers**: `candidate.value`, `candidate.available`,
+  `state.is_current` (how to *read* fields — not how to *score* the world)
+- **Host-registered readers** (`ReaderRegistry` / optional `readers` in
+  `fusion_step` JSON): named recipes over host-supplied fields; unknown names
+  fail closed; still not evaluators
+- Weighted normalize → constraints → rank
+- Modes: **`select_one`** (one id) and **`compose_one`** (multi-stream
+  `decision.composed` parts + primary id)
+- Hysteresis / close-margin style stability for `select_one`
+- Envelope: `decision` + `state` + **`evaluations`** detail from `run_round`
+  (Fala step remains thin unless `include_evaluations` / `detail`)
+- No report store, HTML suite, Python product, or YAML
+- Optional Fala JSON / subprocess step — host still owns evaluators
+
+### Design target (not yet product surface)
+
+- Richer wave / reliability / stale / conflict accounting when hosts supply it
+- Belief snapshot and long-lived replay/audit store (still not a report
+  *product* or management UI)
+- Multi-wave timing models beyond “one host batch per round” if needed by hosts
+
+Code follows the shipped contract. Intent documents the organ we are building
+toward so agents and humans do not confuse fusion with management or with
+evaluation.
+
+## Pipeline (logical)
+
+```text
+host evaluators (any)     →  candidate payloads (signals)
+profile (TOML)            →  weights, constraints, stability
+                ╲         ╱
+                 ╲       ╱
+                  SPLOT round
+                      │
+                      ▼
+              one commitment + next state
+```
+
+1. Host runs whatever evaluations it wants (or none, or random).
+2. Host builds candidates + payloads.
+3. Splot runs one fusion round under the profile.
+4. Host acts on `selected_candidate_id` (switch stream, start task, …).
+5. Host feeds previous decision back as state on the next tick if stickiness
+   matters.
+
+## Reading this repo
+
+| Document | Role |
+| --- | --- |
+| [README](../README.md) | Product entry, contract, proof |
+| [PROFILE_FORMAT](PROFILE_FORMAT.md) | TOML surface |
+| [FALA_INTEGRATION](FALA_INTEGRATION.md) | Optional host mapping |
+| [MOJO_PORT](MOJO_PORT.md) | What is in / out of the Mojo product |
+| `examples/profiles/` | Illustrative fusion policies (not domain engines) |
