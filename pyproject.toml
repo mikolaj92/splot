@@ -1,7 +1,7 @@
 [project]
 name = "splot"
-version = "0.3.2"
-description = "Generic fusion organ: many high-entropy streams in, one lower-entropy commitment out (Mojo engine in mojo/splot)."
+version = "0.4.0"
+description = "Generic fusion organ: Mojo engine + thin optional Python binding (fuse)."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -11,7 +11,7 @@ keywords = ["fusion", "entropy", "decision", "mojo", "cybernetics"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "Programming Language :: Mojo",
+  "Programming Language :: Python :: 3",
   "Typing :: Typed",
 ]
 
@@ -21,15 +21,37 @@ Repository = "https://github.com/mikolaj92/splot"
 Issues = "https://github.com/mikolaj92/splot/issues"
 Changelog = "https://github.com/mikolaj92/splot/blob/main/CHANGELOG.md"
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Metadata-only Python package; product modules live under mojo/splot.
 [tool.hatch.build.targets.wheel]
-only-include = ["README.md"]
+packages = ["python/splot"]
+# Ship Mojo sources so the binding can compile against the engine at first use.
+force-include = { "mojo" = "mojo", "vendor/EmberJson" = "vendor/EmberJson" }
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "python/splot",
+  "mojo",
+  "vendor/EmberJson",
+  "tools",
+  "examples/fixtures",
+  "README.md",
+  "LICENSE",
+  "CHANGELOG.md",
+  "pixi.toml",
+]
 
 [dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
 mojo = [
   "mojo==1.0.0b3.dev2026071505; sys_platform != 'win32'",
 ]
@@ -45,3 +67,7 @@ mojo = { index = "modular-nightly" }
 [tool.uv]
 index-strategy = "unsafe-best-match"
 prerelease = "allow"
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]
+pythonpath = ["python"]

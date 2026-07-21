@@ -6,6 +6,21 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## 0.4.0
+
+**Thin optional Python binding** over the exclusive Mojo engine.
+
+### Added
+
+- `python/splot/`: `fuse`, `fuse_json`, `load_profile` — JSON-compatible happy path
+- `_native.mojo` + JIT compile helper (`_build.py`) against `mojo/splot`
+- Python smoke tests under `python/tests/`
+
+### Unchanged
+
+- Mojo engine and `tools/splot_step.sh` / Fala subprocess contract
+- No dual engine: Python does not reimplement fusion
+
 ## 0.3.2
 
 **Generic fusion organ.** Host-registered payload readers, `compose_one`, and

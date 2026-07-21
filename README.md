@@ -3,6 +3,31 @@
 **Version 0.3.2** — exclusive Mojo + optional Fala subprocess step.
 
 **Splot is a fully Mojo library.** There is no Python runtime, no YAML, no
+
+
+## Thin Python binding (optional)
+
+Mojo remains the product engine. An optional in-process host API:
+
+```bash
+export SPLOT_HOME=/path/to/Splot   # if not developing from the checkout
+# Mojo toolchain on PATH (pixi / Modular)
+uv pip install -e .
+python -c "import splot; print(splot.fuse(profile='examples/fixtures/player_camera_director.profile.toml', candidates=[...]))"
+```
+
+```python
+import splot
+
+decision, state = splot.fuse(
+    profile="examples/fixtures/player_camera_director.profile.toml",
+    candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
+)
+# same JSON contract as tools/splot_step.sh
+```
+
+`tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine.
+
 database, and no report store.
 
 ## One job

@@ -9,3 +9,7 @@ build/
 state.json
 decision_report.json
 
+
+python/splot/__mojocache__/
+__mojocache__/
+.venv-pybind/
