@@ -46,17 +46,34 @@ def _source_hash(root: Path) -> str:
 
 
 def _mojo_env() -> dict[str, str]:
+    """Env so ``mojo build`` can find ``std`` and the driver."""
     env = dict(os.environ)
-    # Prefer Modular SDK layout when present (mojo pip/conda package).
     try:
         from mojo._package_root import get_package_root  # type: ignore[import-not-found]
         from mojo.run import _sdk_default_env  # type: ignore[import-not-found]
 
         root = get_package_root()
         if root is not None:
-            env = {**_sdk_default_env(), **env}
+            return {**_sdk_default_env(), **env}
     except Exception:
         pass
+    candidates = [
+        Path(env["CONDA_PREFIX"]) if env.get("CONDA_PREFIX") else None,
+        Path.home() / "Developer" / "OSS" / "Fala" / ".pixi" / "envs" / "default",
+        Path.home() / "Developer" / "OSS" / "Splot" / ".pixi" / "envs" / "default",
+    ]
+    for root in candidates:
+        if root is None:
+            continue
+        mojo_bin = root / "bin" / "mojo"
+        import_path = root / "lib" / "mojo"
+        if mojo_bin.is_file() and import_path.is_dir():
+            env.setdefault("MODULAR_MAX_PACKAGE_ROOT", str(root))
+            env.setdefault("MODULAR_MOJO_MAX_PACKAGE_ROOT", str(root))
+            env.setdefault("MODULAR_MOJO_MAX_DRIVER_PATH", str(mojo_bin))
+            env.setdefault("MODULAR_MOJO_MAX_IMPORT_PATH", str(import_path))
+            env["PATH"] = str(root / "bin") + os.pathsep + env.get("PATH", "")
+            break
     return env
 
 
