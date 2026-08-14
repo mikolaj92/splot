@@ -59,10 +59,6 @@ mojo = [
 [[tool.uv.index]]
 name = "modular-nightly"
 url = "https://whl.modular.com/nightly/simple/"
-explicit = true
-
-[tool.uv.sources]
-mojo = { index = "modular-nightly" }
 
 [tool.uv]
 index-strategy = "unsafe-best-match"

@@ -57,10 +57,18 @@ def _mojo_env() -> dict[str, str]:
             return {**_sdk_default_env(), **env}
     except Exception:
         pass
+    local_pixi = None
+    try:
+        local_pixi = repo_root() / ".pixi" / "envs" / "default"
+    except Exception:
+        pass
+    # Prefer this checkout's pinned Pixi toolchain over a sibling Fala env,
+    # which may ship a newer Mojo that cannot compile this tree.
     candidates = [
         Path(env["CONDA_PREFIX"]) if env.get("CONDA_PREFIX") else None,
-        Path.home() / "Developer" / "OSS" / "Fala" / ".pixi" / "envs" / "default",
+        local_pixi,
         Path.home() / "Developer" / "OSS" / "Splot" / ".pixi" / "envs" / "default",
+        Path.home() / "Developer" / "OSS" / "Fala" / ".pixi" / "envs" / "default",
     ]
     for root in candidates:
         if root is None:
