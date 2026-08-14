@@ -5,7 +5,7 @@ commitment out. Domain- and evaluator-agnostic: the host supplies signal
 values; Splot only fuses under a TOML profile.
 """
 
-comptime SPLOT_VERSION = "0.3.2"
+comptime SPLOT_VERSION = "0.4.0"
 
 from .models import (
     Candidate,
