@@ -6,6 +6,12 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## 0.4.1
+
+- Pixi/uv on stable Mojo **1.0.0** (drop nightly `1.0.0b3`).
+- Clone EmberJson at `951f4ef` and apply the same Mojo 1.0 patch as Fala/Takt; do not keep EmberJson in git.
+- Fail closed on TOML slice bounds at EOF (Mojo 1.0 `String` slices no longer allow past-the-end peeks).
+
 ## 0.4.0
 
 **Thin optional Python binding** over the exclusive Mojo engine.
