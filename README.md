@@ -1,6 +1,6 @@
 # Splot
 
-**Version 0.4.0** — exclusive Mojo engine + optional thin Python binding (`fuse`).
+**Version 0.4.1** — exclusive Mojo engine + optional thin Python binding (`fuse`).
 
 **Splot is a Mojo library.** There is no YAML, no database, and no report store.
 An optional Python package (`python/splot`) is a JSON bridge to the same Mojo
@@ -101,7 +101,7 @@ tools/          mojo_run.sh, splot_step.sh (Fala effector)
 
 ## Quick proof
 
-Requires a Mojo toolchain (Pixi or a sibling Fala Pixi env via `tools/mojo_run.sh`):
+Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). EmberJson is cloned + patched at first smoke (`tools/setup_ember_json.sh`), not vendored in git:
 
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
