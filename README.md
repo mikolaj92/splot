@@ -95,7 +95,6 @@ python/splot/   optional host binding (fuse / fuse_json)
 mojo/smoke/     gates
 examples/       TOML profiles & fixtures
 docs/           design notes (intent + shipped scope)
-vendor/         EmberJson
 tools/          mojo_run.sh, splot_step.sh (Fala effector)
 ```
 
