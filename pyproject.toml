@@ -56,3 +56,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
 pythonpath = ["python"]
+
+[tool.lokay]
+test = "./tools/test_product.sh"
