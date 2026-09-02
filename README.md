@@ -105,9 +105,8 @@ Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). Embe
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
-# Complete product gate:
-mise exec pixi -- pixi run full-smoke
-uv run pytest
+# Complete product gate (Mojo smokes + thin Python parity):
+./tools/test_product.sh
 ```
 
 ### One step as a subprocess (Fala-compatible)
