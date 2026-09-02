@@ -113,11 +113,13 @@ uv run pytest
 ### One step as a subprocess (Fala-compatible)
 
 ```bash
-# From Splot (or via Fala process host → this script):
+# From Splot (or via Fala process host → this script). A request is mandatory:
 export SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json
 ./tools/splot_step.sh
 # With FALA_EFFECTOR_OUTPUT_DIR set, writes output/result.json
 ```
+
+Missing request input fails closed; the wrapper never substitutes an example fixture.
 
 Fala integration proof (sibling checkout):
 

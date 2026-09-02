@@ -1,8 +1,0 @@
-id = "splot_fala_integration"
-version = "1"
-
-[[correlation_paths]]
-id = "arbitrate"
-[[correlation_paths.effectors]]
-id = "splot_step"
-adapter = { kind = "subprocess", command = ["splot-fala-step"] }
