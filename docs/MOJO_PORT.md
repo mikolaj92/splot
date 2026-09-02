@@ -1,10 +1,9 @@
 # Exclusive Mojo — minimal product
 
-**Release: 0.3.x**
+**Release: 0.4.x**
 
-Splot is a **Mojo-only fusion step**: several host-supplied signal streams
-(candidates) → one commitment (`select_one` or `compose_one`). No Python
-product, no report suite, no storage product, no embedded evaluators.
+Splot is a **Mojo-native fusion step**: several host-supplied signal streams
+(candidates) → one commitment (`select_one` or `compose_one`). The optional thin Python binding calls the same Mojo engine; there is no second runtime, no report suite, no storage product, no embedded evaluators.
 
 ## In tree
 
@@ -19,7 +18,7 @@ product, no report suite, no storage product, no embedded evaluators.
 - Decision report platform / schema suite  
 - State file stores  
 - HTML / audit / CLI operator suite  
-- YAML / Python runtime  
+- YAML / independent Python runtime
 - LLM / CV / RAG / “evaluator plugins” as Splot features  
 - Source or stream **management** APIs  
 

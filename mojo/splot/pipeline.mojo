@@ -457,13 +457,25 @@ def decide_compose_one(
     )
 
 
+def _validate_decision_contract(profile: Value) raises -> String:
+    var mode = obj_string(profile, "mode", "select_one")
+    if mode != "select_one" and mode != "compose_one":
+        raise Error("splot: unsupported decision mode: " + mode)
+    var policy = obj_string(
+        nested(profile, "decision"), "policy", "constrained_weighted_score"
+    )
+    if policy != "constrained_weighted_score" and policy != "weighted_score":
+        raise Error("splot: unsupported decision policy: " + policy)
+    return mode
+
+
 def decide_from_evaluations(
     profile: Value,
     evaluations: List[CandidateEvaluation],
     state: SplotState,
 ) raises -> Decision:
-    var mode = obj_string(profile, "mode", "select_one")
-    if mode == "compose_one" or mode == "compose":
+    var mode = _validate_decision_contract(profile)
+    if mode == "compose_one":
         return decide_compose_one(profile, evaluations, state)
     return decide_select_one(profile, evaluations, state)
 
@@ -474,9 +486,9 @@ def apply_stability(
     state: SplotState,
     decision: Decision,
 ) raises -> Decision:
-    var mode = obj_string(profile, "mode", "select_one")
+    var mode = _validate_decision_contract(profile)
     # Stability homeostat applies to select_one stickiness; compose recomputes parts each round.
-    if mode == "compose_one" or mode == "compose":
+    if mode == "compose_one":
         return decision.copy()
     var stab = nested(profile, "stability")
     var policy = obj_string(stab, "policy", "none")

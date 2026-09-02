@@ -1,11 +1,11 @@
 version = 1
 id = "route_selector"
-mode = "route"
+mode = "select_one"
 language = "en"
 
 [objective]
 id = "best_processing_route"
-description = "Route a work item to the best matching processing path."
+description = "Select the available processing route with the best host-supplied fit and cost."
 
 [[signals]]
 id = "route_fit"
@@ -28,13 +28,12 @@ severity = "block"
 reason = "route unavailable"
 
 [decision]
-policy = "route_by_best_match"
+policy = "constrained_weighted_score"
 close_margin = 0.04
 
 [stability]
 policy = "none"
 
 [uncertainty]
-when_close = "human_decision"
-when_no_candidate = "fallback"
+when_close = "select_best_anyway"
 when_constraints_block_all = "fallback"
