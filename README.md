@@ -105,6 +105,9 @@ Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). Embe
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
+# Complete product gate:
+mise exec pixi -- pixi run full-smoke
+uv run pytest
 ```
 
 ### One step as a subprocess (Fala-compatible)
@@ -164,6 +167,9 @@ Statuses in normal use: `selected`, `composed`, `fallback`,
 | --- | --- |
 | `select_one` (default) | one candidate id |
 | `compose_one` | one multi-stream composition (`decision.composed` parts + primary id) |
+
+Any other `mode` or decision `policy` fails closed. Shipped policies are
+`constrained_weighted_score` and `weighted_score`.
 
 `run_round` returns a host-facing envelope with `decision`, `state`, and
 **`evaluations`** (per-candidate scores/signals/constraints). The Fala/subprocess

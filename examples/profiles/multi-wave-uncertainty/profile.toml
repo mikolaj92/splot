@@ -37,7 +37,5 @@ close_margin = 0.1
 policy = "none"
 
 [uncertainty]
-when_close = "request_more_evidence"
-when_conflicting = "request_more_evidence"
-when_no_candidate = "request_more_evidence"
-when_constraints_block_all = "request_more_evidence"
+when_close = "select_best_anyway"
+when_constraints_block_all = "fallback"

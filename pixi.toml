@@ -15,5 +15,6 @@ fala-stdio = { cmd = "./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo", depends-o
 step-fixture = { cmd = "env SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json ./tools/splot_step.sh", depends-on = ["setup-ember-json"] }
 host-readers = { cmd = "./tools/mojo_run.sh mojo/smoke/host_readers.mojo", depends-on = ["setup-ember-json"] }
 compose-envelope = { cmd = "./tools/mojo_run.sh mojo/smoke/compose_envelope.mojo", depends-on = ["setup-ember-json"] }
-full-smoke = "pixi run core-round && pixi run fala-stdio && pixi run host-readers && pixi run compose-envelope"
+profile-contracts = { cmd = "./tools/mojo_run.sh mojo/smoke/profile_contracts.mojo", depends-on = ["setup-ember-json"] }
+full-smoke = "pixi run core-round && pixi run fala-stdio && pixi run host-readers && pixi run compose-envelope && pixi run profile-contracts"
 

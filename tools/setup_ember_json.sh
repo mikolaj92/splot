@@ -7,6 +7,7 @@ revision=951f4ef28d0c2748a30b2c5e43e139411ccca5ef
 patch="$root/patches/emberjson-mojo-1.0.patch"
 
 if [ ! -d "$destination/.git" ] ||
+   [ ! -f "$destination/emberjson/_deserialize/reflection.mojo" ] ||
    [ "$(git -C "$destination" rev-parse HEAD 2>/dev/null || true)" != "$revision" ]; then
     rm -rf "$destination"
     mkdir -p "$(dirname -- "$destination")"
