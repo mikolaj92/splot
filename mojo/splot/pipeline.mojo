@@ -490,11 +490,15 @@ def apply_stability(
     var min_improvement = obj_float(stab, "min_improvement", 0.0)
     var proposed_score: Float64 = decision.confidence
     var previous_score: Float64 = obj_float(prev, "confidence", 0.0)
+    var previous_eligible = False
     for e in evaluations:
         if e.candidate_id == proposed:
             proposed_score = e.score
         if e.candidate_id == previous_id:
             previous_score = e.score
+            previous_eligible = e.eligible
+    if not previous_eligible:
+        return decision.copy()
     var margin = proposed_score - previous_score
     if policy == "hysteresis" or policy == "prefer_current_when_close" or policy == "switching_cost":
         if margin < min_improvement:
