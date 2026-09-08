@@ -28,6 +28,17 @@ struct TomlParser(Movable):
     def _eof(self) -> Bool:
         return self.index >= self.text.byte_length()
 
+    def _remaining(self) -> Int:
+        if self._eof():
+            return 0
+        return self.text.byte_length() - self.index
+
+    def _starts_with(self, token: String) -> Bool:
+        var n = token.byte_length()
+        if self._remaining() < n:
+            return False
+        return self.text[byte=self.index : self.index + n] == token
+
     def _char(self) -> String:
         if self._eof():
             return ""
@@ -67,7 +78,7 @@ struct TomlParser(Movable):
             return
 
     def _expect(mut self, token: String) raises:
-        if self.text[byte=self.index:self.index + token.byte_length()] != token:
+        if not self._starts_with(token):
             self._error("expected '" + token + "'")
         self.index += token.byte_length()
 
@@ -228,8 +239,11 @@ struct TomlParser(Movable):
 
     def _parse_number(self, token: String) raises -> Value:
         var clean = self._strip_underscores(token)
-        var signless = clean
-        if signless.startswith("+") or signless.startswith("-"): signless = String(signless[byte=1:])
+        var signless: String
+        if clean.startswith("+") or clean.startswith("-"):
+            signless = String(clean[byte=1:])
+        else:
+            signless = clean
         if signless.startswith("0x") or signless.startswith("0X"):
             return self._parse_integer_base(clean, 16)
         if signless.startswith("0o") or signless.startswith("0O"):
@@ -247,8 +261,11 @@ struct TomlParser(Movable):
             var digits = signless
             if digits.startswith("0"): self._error("leading zero in decimal integer")
         try:
-            var decimal = clean
-            if decimal.startswith("+"): decimal = String(decimal[byte=1:])
+            var decimal: String
+            if clean.startswith("+"):
+                decimal = String(clean[byte=1:])
+            else:
+                decimal = clean
             var parsed = Value(parse_string=decimal)
             if not parsed.is_int() and not parsed.is_uint(): self._error("invalid decimal integer")
             return parsed^
@@ -313,7 +330,7 @@ struct TomlParser(Movable):
     def _parse_scalar_value(mut self) raises -> Value:
         self._skip_spaces()
         var ch = self._char()
-        if self.text[byte=self.index:self.index + 3] == "\"\"\"" or self.text[byte=self.index:self.index + 3] == "'''":
+        if self._starts_with("\"\"\"") or self._starts_with("'''"):
             self._error("multiline strings are unsupported")
         if ch == "\"": return Value(self._parse_basic_string())
         if ch == "'": return Value(self._parse_literal_string())
@@ -485,7 +502,7 @@ struct TomlParser(Movable):
         return result
 
     def _parse_header(mut self, mut root: Value) raises:
-        if self.text[byte=self.index:self.index + 2] == "[[":
+        if self._starts_with("[["):
             self.index += 2
             var parts = self._parse_key_path("]")
             self._expect("]]" )

@@ -12,4 +12,4 @@ from __future__ import annotations
 from splot.api import fuse, fuse_json, load_profile
 
 __all__ = ["fuse", "fuse_json", "load_profile", "__version__"]
-__version__ = "0.4.0"
+__version__ = "0.4.1"

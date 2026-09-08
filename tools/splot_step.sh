@@ -28,5 +28,18 @@ if ! command -v mojo >/dev/null 2>&1; then
   echo '{"ok":false,"error":"mojo not found"}' >&2
   exit 127
 fi
+
+if [[ -z "${SPLOT_REQUEST_PATH:-}" && -z "${FALA_EFFECTOR_MANIFEST:-}" ]]; then
+  echo '{"ok":false,"error":"splot request path required"}' >&2
+  exit 2
+fi
+if [[ -n "${SPLOT_REQUEST_PATH:-}" && ! -f "$SPLOT_REQUEST_PATH" ]]; then
+  echo '{"ok":false,"error":"splot request file not found"}' >&2
+  exit 2
+fi
+if [[ -n "${FALA_EFFECTOR_MANIFEST:-}" && ! -f "$FALA_EFFECTOR_MANIFEST" ]]; then
+  echo '{"ok":false,"error":"Fala effector manifest not found"}' >&2
+  exit 2
+fi
 cd "$root"
 exec mojo run -I mojo -I vendor/EmberJson mojo/splot/step_main.mojo

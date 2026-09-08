@@ -44,12 +44,11 @@ def main() raises:
             if Path(request_file).exists():
                 path = request_file
             else:
-                # Fall back to reading whole manifest as step payload wrapper.
+                # The manifest may carry the fusion payload directly under input.
                 var man_text = Path(manifest).read_text()
                 var man = parse_json(man_text)
                 if man.is_object() and "input" in man.object():
                     var inp = man.object()["input"].copy()
-                    # Prefer input as the fusion payload when it already looks like one.
                     if inp.is_object() and (
                         "profile" in inp.object()
                         or "candidates" in inp.object()
@@ -58,11 +57,10 @@ def main() raises:
                         var out = fusion_step(to_string(inp))
                         _write_result(out)
                         return
-                # Last resort: fixture path relative to cwd.
-                path = "examples/fixtures/player_camera_director.request.json"
+                raise Error("splot: Fala manifest has no fusion request input")
 
     if path == "":
-        path = "examples/fixtures/player_camera_director.request.json"
+        raise Error("splot: request path required")
 
     var text = Path(path).read_text()
     var out = fusion_step(text)

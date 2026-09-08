@@ -7,20 +7,6 @@ language = "pl"
 id = "best_player_view"
 description = "Select the source that best represents the current target."
 
-[[waves]]
-id = "camera_1"
-kind = "video"
-reliability = 0.95
-
-[[waves]]
-id = "camera_2"
-kind = "video"
-reliability = 0.93
-
-[[waves]]
-id = "camera_3"
-kind = "video"
-reliability = 0.91
 
 [[signals]]
 id = "visibility"
@@ -78,13 +64,8 @@ close_margin = 0.05
 [stability]
 policy = "hysteresis"
 min_improvement = 0.15
-min_hold_ms = 1200
-cooldown_ms = 2500
-prefer_current_when_close = true
 
 [uncertainty]
 when_close = "keep_previous"
-when_conflicting = "request_more_evidence"
 when_no_candidate = "fallback"
 when_constraints_block_all = "fallback"
-when_source_stale = "request_more_evidence"

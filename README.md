@@ -1,34 +1,10 @@
 # Splot
 
-**Version 0.3.2** — exclusive Mojo + optional Fala subprocess step.
+**Version 0.4.1** — exclusive Mojo engine + optional thin Python binding (`fuse`).
 
-**Splot is a fully Mojo library.** There is no Python runtime, no YAML, no
-
-
-## Thin Python binding (optional)
-
-Mojo remains the product engine. An optional in-process host API:
-
-```bash
-export SPLOT_HOME=/path/to/Splot   # if not developing from the checkout
-# Mojo toolchain on PATH (pixi / Modular)
-uv pip install -e .
-python -c "import splot; print(splot.fuse(profile='examples/fixtures/player_camera_director.profile.toml', candidates=[...]))"
-```
-
-```python
-import splot
-
-decision, state = splot.fuse(
-    profile="examples/fixtures/player_camera_director.profile.toml",
-    candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
-)
-# same JSON contract as tools/splot_step.sh
-```
-
-`tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine.
-
-database, and no report store.
+**Splot is a Mojo library.** There is no YAML, no database, and no report store.
+An optional Python package (`python/splot`) is a JSON bridge to the same Mojo
+engine — not a second runtime.
 
 ## One job
 
@@ -86,7 +62,7 @@ and persistence. Splot only **fuses and commits**.
 - **Not a report / audit / HTML product**
 - **Not a state database** (optional previous-decision JSON is enough for
   stability)
-- **Not a Python package**
+- **Not a second engine** — the optional Python package only calls Mojo
 
 ## Boundaries (hard)
 
@@ -104,41 +80,45 @@ in the same fields.
 **Domain-agnostic:** cameras and multi-modal AI use the same contract:
 candidates + profile → decision.
 
-## Fully Mojo
+## Mojo-native engine
 
 | | |
 | --- | --- |
-| Language | **Mojo only** (`mojo/splot/`) |
+| Language | **Mojo** (`mojo/splot/`) — the product engine |
 | Profiles | **TOML only** (`profile.toml`) |
 | Proof | Mojo smokes (`mojo/smoke/`) |
-| Python | **none** in the product tree |
+| Python | optional thin package (`python/splot/`), a JSON bridge — not a second engine |
 
 ```text
 mojo/splot/     engine (+ step_main for host entry)
+python/splot/   optional host binding (fuse / fuse_json)
 mojo/smoke/     gates
 examples/       TOML profiles & fixtures
 docs/           design notes (intent + shipped scope)
-vendor/         EmberJson
 tools/          mojo_run.sh, splot_step.sh (Fala effector)
 ```
 
 ## Quick proof
 
-Requires a Mojo toolchain (Pixi or a sibling Fala Pixi env via `tools/mojo_run.sh`):
+Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). EmberJson is cloned + patched at first smoke (`tools/setup_ember_json.sh`), not vendored in git:
 
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
+# Complete product gate (Mojo smokes + thin Python parity):
+./tools/test_product.sh
 ```
 
 ### One step as a subprocess (Fala-compatible)
 
 ```bash
-# From Splot (or via Fala process host → this script):
+# From Splot (or via Fala process host → this script). A request is mandatory:
 export SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json
 ./tools/splot_step.sh
 # With FALA_EFFECTOR_OUTPUT_DIR set, writes output/result.json
 ```
+
+Missing request input fails closed; the wrapper never substitutes an example fixture.
 
 Fala integration proof (sibling checkout):
 
@@ -149,7 +129,7 @@ mise exec -- pixi run splot-integration
 
 Both should print `… smoke ok`.
 
-## Contract (0.3.x shipped)
+## Contract (0.4.x shipped)
 
 ### Input
 
@@ -188,6 +168,9 @@ Statuses in normal use: `selected`, `composed`, `fallback`,
 | --- | --- |
 | `select_one` (default) | one candidate id |
 | `compose_one` | one multi-stream composition (`decision.composed` parts + primary id) |
+
+Any other `mode` or decision `policy` fails closed. Shipped policies are
+`constrained_weighted_score` and `weighted_score`.
 
 `run_round` returns a host-facing envelope with `decision`, `state`, and
 **`evaluations`** (per-candidate scores/signals/constraints). The Fala/subprocess
@@ -281,6 +264,30 @@ var result = run_round(profile, candidates, SplotState())
 # result.report_json / result.evaluations_json — host audit detail
 ```
 
+## Thin Python binding (optional)
+
+Mojo remains the product engine. An optional in-process host API ships as a
+real Python package (`python/splot`):
+
+```bash
+export SPLOT_HOME=/path/to/Splot   # if not developing from the checkout
+# Mojo toolchain on PATH (pixi / Modular)
+uv pip install -e .
+python -c "import splot; print(splot.fuse(profile='examples/fixtures/player_camera_director.profile.toml', candidates=[...]))"
+```
+
+```python
+import splot
+
+decision, state = splot.fuse(
+    profile="examples/fixtures/player_camera_director.profile.toml",
+    candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
+)
+# same JSON contract as tools/splot_step.sh
+```
+
+`tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine.
+
 ## Use with Fala (optional)
 
 Splot stays import-free toward Fala. A Fala effector can pass JSON and get a
@@ -293,7 +300,7 @@ into one commitment.
 
 ## Theory
 
-Background and the split between **design intent** and **0.3.x shipped scope**:
+Background and the split between **design intent** and **0.4.x shipped scope**:
 [`docs/CONCEPTUAL_MODEL.md`](docs/CONCEPTUAL_MODEL.md).
 
 ## License

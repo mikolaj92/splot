@@ -30,7 +30,7 @@ an evaluation function.
    Parallel streams: RAG hits, images, a book chapter, docs, a user prompt, a
    goal. Outside Splot, any evaluators attach signals (relevance, coverage,
    conflict, freshness, …). Splot commits **one** lower-entropy outcome the host
-   can act on (e.g. which option to take, or — in a future compose mode — the
+   can act on (e.g. which option to take, or — through the shipped `compose_one` mode — the
    structure of a single task communicate).
 
 The camera metaphor is only an example. The technical concept is **stateful
@@ -106,7 +106,7 @@ rest (correlator, homeostat, feedback).
 Optional richer notions (**evidence**, **belief**, full **trace/report**,
 **verifiers** as registered checks) belong to the design target for deeper
 uncertainty accounting. They are **not** required to understand or use the
-0.3.x fusion loop.
+0.4.x fusion loop.
 
 ## Shipped vs design target
 
@@ -114,7 +114,7 @@ Documentation used to describe a rich belief / DecisionReport surface in the
 present tense while the Mojo product was intentionally slim. This section is
 the honest split.
 
-### Shipped in 0.3.x+ (Mojo product)
+### Shipped in 0.4.x (Mojo product)
 
 - TOML profile + candidates with JSON payloads
 - Builtin **payload readers**: `candidate.value`, `candidate.available`,
@@ -128,7 +128,8 @@ the honest split.
 - Hysteresis / close-margin style stability for `select_one`
 - Envelope: `decision` + `state` + **`evaluations`** detail from `run_round`
   (Fala step remains thin unless `include_evaluations` / `detail`)
-- No report store, HTML suite, Python product, or YAML
+- No report store, HTML suite, independent Python engine, or YAML
+- Optional thin Python binding over the same Mojo engine
 - Optional Fala JSON / subprocess step — host still owns evaluators
 
 ### Design target (not yet product surface)

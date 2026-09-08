@@ -58,3 +58,51 @@ def test_load_profile_ok() -> None:
 
     path = splot.load_profile(FIXTURE_PROFILE)
     assert Path(path).is_file()
+
+
+def test_compose_one_matches_mojo_smoke() -> None:
+    import splot
+
+    decision, _ = splot.fuse(
+        profile=ROOT / "examples/fixtures/compose_streams.profile.toml",
+        candidates=[
+            {"id": "rag", "payload": {"relevance": 0.9, "coverage": 0.8, "available": True}},
+            {"id": "docs", "payload": {"relevance": 0.7, "coverage": 0.85, "available": True}},
+            {"id": "image", "payload": {"relevance": 0.2, "coverage": 0.2, "available": True}},
+            {"id": "dead", "payload": {"relevance": 0.99, "coverage": 0.99, "available": False}},
+        ],
+        now="2026-01-01T12:00:00Z",
+    )
+    assert decision["status"] == "composed"
+    assert decision["selected_candidate_id"] == "rag"
+    composed = decision["composed"]
+    assert [part["id"] for part in composed["parts"]] == ["rag", "docs"]
+
+
+def test_host_reader_matches_mojo_smoke() -> None:
+    import splot
+
+    decision, _ = splot.fuse(
+        profile=ROOT / "examples/fixtures/host_focus.profile.toml",
+        candidates=[
+            {"id": "stream_a", "payload": {"player": 0.9, "ball": 0.9, "available": True}},
+            {"id": "stream_b", "payload": {"player": 0.99, "ball": 0.1, "available": True}},
+        ],
+        readers={"signals": {"host.focus": "product:player,ball"}},
+        now="2026-01-01T00:00:01Z",
+    )
+    assert decision["status"] == "selected"
+    assert decision["selected_candidate_id"] == "stream_a"
+    assert decision["confidence"] > 0.5
+
+
+def test_toml_unterminated_string_fails_closed(tmp_path: Path) -> None:
+    import splot
+
+    profile = tmp_path / "broken.profile.toml"
+    profile.write_text('mode = "select_one', encoding="utf-8")
+    with pytest.raises(Exception, match=r"unterminated .*string"):
+        splot.fuse(
+            profile=profile,
+            candidates=[{"id": "candidate", "payload": {"available": True}}],
+        )
