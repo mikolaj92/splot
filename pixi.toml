@@ -17,5 +17,6 @@ host-readers = { cmd = "./tools/mojo_run.sh mojo/smoke/host_readers.mojo", depen
 compose-envelope = { cmd = "./tools/mojo_run.sh mojo/smoke/compose_envelope.mojo", depends-on = ["setup-ember-json"] }
 profile-contracts = { cmd = "./tools/mojo_run.sh mojo/smoke/profile_contracts.mojo", depends-on = ["setup-ember-json"] }
 step-boundary = { cmd = "./tools/step_boundary_smoke.sh", depends-on = ["setup-ember-json"] }
-full-smoke = "pixi run core-round && pixi run fala-stdio && pixi run host-readers && pixi run compose-envelope && pixi run profile-contracts && pixi run step-boundary"
+stability-eligibility = { cmd = "./tools/mojo_run.sh mojo/smoke/stability_eligibility.mojo", depends-on = ["setup-ember-json"] }
+full-smoke = "pixi run core-round && pixi run fala-stdio && pixi run host-readers && pixi run compose-envelope && pixi run profile-contracts && pixi run stability-eligibility && pixi run step-boundary"
 
