@@ -325,19 +325,22 @@ def decide_select_one(
     var when_close = obj_string(nested(profile, "uncertainty"), "when_close", "select_best_anyway")
     if when_close == "keep_previous" and previous_id != "" and margin <= close_margin and len(ranked) > 1:
         var prev_score2: Float64 = 0.0
+        var previous_eligible = False
         for e in evaluations:
-            if e.candidate_id == previous_id:
+            if e.candidate_id == previous_id and e.eligible:
                 prev_score2 = e.score
-        return Decision(
-            _new_id("decision"),
-            "selected",
-            objective_id,
-            previous_id,
-            prev_score2,
-            1.0 - prev_score2,
-            "close_scores_keep_previous",
-            "top candidates are close",
-        )
+                previous_eligible = True
+        if previous_eligible:
+            return Decision(
+                _new_id("decision"),
+                "selected",
+                objective_id,
+                previous_id,
+                prev_score2,
+                1.0 - prev_score2,
+                "close_scores_keep_previous",
+                "top candidates are close",
+            )
 
     return Decision(
         _new_id("decision"),
