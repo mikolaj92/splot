@@ -84,6 +84,9 @@ def _mojo_env() -> dict[str, str]:
             env["MODULAR_MOJO_MAX_DRIVER_PATH"] = str(mojo_bin)
             env["MODULAR_MOJO_MAX_IMPORT_PATH"] = str(import_path)
             env["PATH"] = str(root / "bin") + os.pathsep + env.get("PATH", "")
+            # Same as tools/splot_step.sh: mojo build needs a writable SDK home.
+            env.setdefault("CONDA_PREFIX", str(root))
+            env.setdefault("MODULAR_HOME", str(root / "share" / "max"))
             return env
     try:
         from mojo._package_root import get_package_root  # type: ignore[import-not-found]
