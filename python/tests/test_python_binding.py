@@ -19,6 +19,31 @@ def _chdir_root(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SPLOT_HOME", str(ROOT))
 
 
+def test_mojo_env_prefers_detected_pixi_sdk_over_inherited_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from splot import _build
+
+    repo_root = tmp_path / "splot"
+    pixi_root = repo_root / ".pixi" / "envs" / "default"
+    mojo_bin = pixi_root / "bin" / "mojo"
+    mojo_bin.parent.mkdir(parents=True)
+    mojo_bin.touch()
+    import_path = pixi_root / "lib" / "mojo"
+    import_path.mkdir(parents=True)
+
+    monkeypatch.setattr(_build, "repo_root", lambda: repo_root)
+    monkeypatch.setenv("CONDA_PREFIX", "/opt/modular")
+    monkeypatch.setenv("MODULAR_HOME", "/opt/modular")
+
+    env = _build._mojo_env()
+
+    assert env["CONDA_PREFIX"] == str(pixi_root)
+    assert env["MODULAR_HOME"] == str(pixi_root / "share" / "max")
+    assert env["MODULAR_MOJO_MAX_DRIVER_PATH"] == str(mojo_bin)
+    assert env["MODULAR_MOJO_MAX_IMPORT_PATH"] == str(import_path)
+
+
 def test_fuse_fixture_selects_cam_a() -> None:
     import splot
 
@@ -94,6 +119,95 @@ def test_host_reader_matches_mojo_smoke() -> None:
     assert decision["status"] == "selected"
     assert decision["selected_candidate_id"] == "stream_a"
     assert decision["confidence"] > 0.5
+
+
+def _stability_candidate(
+    cid: str,
+    *,
+    visibility: float,
+    face_angle: float,
+    sharpness: float,
+    available: bool,
+) -> dict[str, object]:
+    return {
+        "id": cid,
+        "payload": {
+            "visibility": visibility,
+            "face_angle": face_angle,
+            "sharpness": sharpness,
+            "occlusion": 0.0,
+            "available": available,
+        },
+    }
+
+
+def test_stability_eligibility_matches_mojo_smoke() -> None:
+    """Blocked or absent previous cannot win via hysteresis / when_close.
+
+    Same cases as ``mojo/smoke/stability_eligibility.mojo`` (in ``full-smoke``),
+    through the thin Python binding — not a second engine.
+    """
+    import splot
+
+    _, state = splot.fuse(
+        profile=FIXTURE_PROFILE,
+        candidates=[
+            _stability_candidate(
+                "previous",
+                visibility=1.0,
+                face_angle=1.0,
+                sharpness=1.0,
+                available=True,
+            )
+        ],
+    )
+
+    replacement = _stability_candidate(
+        "replacement",
+        visibility=0.7,
+        face_angle=0.5,
+        sharpness=0.5,
+        available=True,
+    )
+    blocked_previous = _stability_candidate(
+        "previous",
+        visibility=1.0,
+        face_angle=1.0,
+        sharpness=1.0,
+        available=False,
+    )
+    for next_candidates in ([blocked_previous, replacement], [replacement]):
+        decision, _ = splot.fuse(
+            profile=FIXTURE_PROFILE,
+            candidates=next_candidates,
+            state=state,
+        )
+        assert decision["selected_candidate_id"] == "replacement"
+
+    close_replacement = _stability_candidate(
+        "replacement",
+        visibility=0.72,
+        face_angle=0.5,
+        sharpness=0.5,
+        available=True,
+    )
+    rival = _stability_candidate(
+        "rival",
+        visibility=0.70,
+        face_angle=0.5,
+        sharpness=0.5,
+        available=True,
+    )
+    for next_candidates in (
+        [blocked_previous, close_replacement, rival],
+        [close_replacement, rival],
+    ):
+        decision, _ = splot.fuse(
+            profile=FIXTURE_PROFILE,
+            candidates=next_candidates,
+            state=state,
+        )
+        assert decision["selected_candidate_id"] == "replacement"
 
 
 def test_toml_unterminated_string_fails_closed(tmp_path: Path) -> None:

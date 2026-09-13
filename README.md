@@ -109,6 +109,12 @@ Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). Embe
 ./tools/test_product.sh
 ```
 
+Hysteresis eligibility (blocked or absent previous candidate) is gated by
+`mojo/smoke/stability_eligibility.mojo` inside `pixi run full-smoke`.
+`./tools/test_product.sh` / `[tool.lokay] test` cannot pass if that smoke
+fails. Pytest covers the same cases through the thin Python binding — not a
+second engine.
+
 ### One step as a subprocess (Fala-compatible)
 
 ```bash

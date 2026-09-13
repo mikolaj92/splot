@@ -11,7 +11,7 @@ Splot is a **Mojo-native fusion step**: several host-supplied signal streams
 - TOML profiles only (fusion policy, not domain/evaluator code)  
 - Host-registered **payload reader recipes** (not free-form plugins)  
 - Fala JSON boundary (`adapters_fala.mojo`) without artifact files  
-- Smokes: `core_round`, `fala_stdio`, `host_readers`, `compose_envelope`  
+- Smokes: `core_round`, `fala_stdio`, `host_readers`, `compose_envelope`, `profile_contracts`, `stability_eligibility`
 
 ## Out of product
 
@@ -27,6 +27,8 @@ Splot is a **Mojo-native fusion step**: several host-supplied signal streams
 ```bash
 ./tools/mojo_run.sh mojo/smoke/core_round.mojo
 ./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
+./tools/mojo_run.sh mojo/smoke/stability_eligibility.mojo
+pixi run full-smoke   # includes stability_eligibility; hysteresis is not pytest-only
 ```
 
 Intent and shipped-vs-target: [`CONCEPTUAL_MODEL.md`](CONCEPTUAL_MODEL.md).
