@@ -11,7 +11,7 @@ Splot is a **Mojo-native fusion step**: several host-supplied signal streams
 - TOML profiles only (fusion policy, not domain/evaluator code)  
 - Host-registered **payload reader recipes** (not free-form plugins)  
 - Fala JSON boundary (`adapters_fala.mojo`) without artifact files  
-- Smokes: `core_round`, `fala_stdio`, `host_readers`, `compose_envelope`, `profile_contracts`, `stability_eligibility`  
+- Smokes: `core_round`, `fala_stdio`, `host_readers`, `compose_envelope`, `profile_contracts`, `stability_eligibility`
 
 ## Out of product
 
