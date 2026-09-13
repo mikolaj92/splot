@@ -19,6 +19,31 @@ def _chdir_root(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SPLOT_HOME", str(ROOT))
 
 
+def test_mojo_env_prefers_detected_pixi_sdk_over_inherited_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from splot import _build
+
+    repo_root = tmp_path / "splot"
+    pixi_root = repo_root / ".pixi" / "envs" / "default"
+    mojo_bin = pixi_root / "bin" / "mojo"
+    mojo_bin.parent.mkdir(parents=True)
+    mojo_bin.touch()
+    import_path = pixi_root / "lib" / "mojo"
+    import_path.mkdir(parents=True)
+
+    monkeypatch.setattr(_build, "repo_root", lambda: repo_root)
+    monkeypatch.setenv("CONDA_PREFIX", "/opt/modular")
+    monkeypatch.setenv("MODULAR_HOME", "/opt/modular")
+
+    env = _build._mojo_env()
+
+    assert env["CONDA_PREFIX"] == str(pixi_root)
+    assert env["MODULAR_HOME"] == str(pixi_root / "share" / "max")
+    assert env["MODULAR_MOJO_MAX_DRIVER_PATH"] == str(mojo_bin)
+    assert env["MODULAR_MOJO_MAX_IMPORT_PATH"] == str(import_path)
+
+
 def test_fuse_fixture_selects_cam_a() -> None:
     import splot
 
