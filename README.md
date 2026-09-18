@@ -289,10 +289,18 @@ decision, state = splot.fuse(
     profile="examples/fixtures/player_camera_director.profile.toml",
     candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
 )
-# same JSON contract as tools/splot_step.sh
+# same organ as tools/splot_step.sh / fusion_step
+# empty candidates → decision["status"] == "no_candidate"
+
+decision, state, evaluations = splot.fuse(
+    profile="examples/fixtures/player_camera_director.profile.toml",
+    candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
+    include_evaluations=True,
+)
+# evaluations is the same list as fuse_json(..., include_evaluations=True)
 ```
 
-`tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine.
+`tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine. `fuse` is the typed pair/triple over that envelope — not a second fail-closed.
 
 ## Use with Fala (optional)
 

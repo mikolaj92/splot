@@ -64,6 +64,83 @@ def test_fuse_json_matches_subprocess_shape() -> None:
     envelope = splot.fuse_json(FIXTURE_REQ.read_text(encoding="utf-8"))
     assert "decision" in envelope and "state" in envelope and "events" in envelope
     assert envelope["decision"]["selected_candidate_id"] == "cam_a"
+    assert "evaluations" not in envelope
+
+
+def test_fuse_include_evaluations_returns_evaluations() -> None:
+    import splot
+
+    request = json.loads(FIXTURE_REQ.read_text(encoding="utf-8"))
+    decision, state, evaluations = splot.fuse(
+        profile=request["profile"],
+        candidates=request["candidates"],
+        now=request.get("now"),
+        include_evaluations=True,
+    )
+    assert decision["status"] == "selected"
+    assert decision["selected_candidate_id"] == "cam_a"
+    assert "evaluations" not in decision
+    assert isinstance(state, dict)
+    assert {row["candidate_id"] for row in evaluations} == {
+        "cam_a",
+        "cam_b",
+        "cam_offline",
+    }
+    cam_a = next(row for row in evaluations if row["candidate_id"] == "cam_a")
+    assert cam_a["eligible"] is True
+    assert "score" in cam_a
+
+
+def test_fuse_json_include_evaluations_attaches_detail() -> None:
+    import splot
+
+    request = json.loads(FIXTURE_REQ.read_text(encoding="utf-8"))
+    request["include_evaluations"] = True
+    envelope = splot.fuse_json(request)
+    evaluations = envelope["evaluations"]
+    assert {row["candidate_id"] for row in evaluations} == {
+        "cam_a",
+        "cam_b",
+        "cam_offline",
+    }
+    assert envelope["decision"]["selected_candidate_id"] == "cam_a"
+
+
+def test_fuse_empty_candidates_is_no_candidate() -> None:
+    import splot
+
+    decision, state = splot.fuse(profile=FIXTURE_PROFILE, candidates=[])
+    assert decision["status"] == "no_candidate"
+    assert not decision.get("selected_candidate_id")
+    assert isinstance(state, dict)
+
+
+def test_fuse_json_empty_candidates_is_no_candidate() -> None:
+    import splot
+
+    envelope = splot.fuse_json(
+        {
+            "profile": "examples/fixtures/player_camera_director.profile.toml",
+            "candidates": [],
+            "now": "2026-01-01T12:00:00Z",
+        }
+    )
+    assert envelope["decision"]["status"] == "no_candidate"
+    assert not envelope["decision"].get("selected_candidate_id")
+    assert "state" in envelope
+
+
+def test_fuse_empty_candidates_include_evaluations() -> None:
+    import splot
+
+    decision, state, evaluations = splot.fuse(
+        profile=FIXTURE_PROFILE,
+        candidates=[],
+        include_evaluations=True,
+    )
+    assert decision["status"] == "no_candidate"
+    assert isinstance(state, dict)
+    assert evaluations == []
 
 
 def test_load_profile_rejects_yaml() -> None:

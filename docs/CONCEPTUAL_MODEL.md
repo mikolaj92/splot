@@ -129,7 +129,7 @@ the honest split.
 - Envelope: `decision` + `state` + **`evaluations`** detail from `run_round`
   (Fala step remains thin unless `include_evaluations` / `detail`)
 - No report store, HTML suite, independent Python engine, or YAML
-- Optional thin Python binding over the same Mojo engine
+- Optional thin Python binding over the same Mojo engine (`fuse` / `fuse_json`; empty candidates are `no_candidate`; `include_evaluations` returns evaluations)
 - Optional Fala JSON / subprocess step — host still owns evaluators
 
 ### Design target (not yet product surface)
