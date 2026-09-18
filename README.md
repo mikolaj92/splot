@@ -175,8 +175,9 @@ Statuses in normal use: `selected`, `composed`, `fallback`,
 | `select_one` (default) | one candidate id |
 | `compose_one` | one multi-stream composition (`decision.composed` parts + primary id) |
 
-Any other `mode` or decision `policy` fails closed. Shipped policies are
-`constrained_weighted_score` and `weighted_score`.
+Any other `mode` or decision `policy` fails closed. Shipped decision policies are
+`constrained_weighted_score` and `weighted_score`. Shipped stability policies
+are `none` and `hysteresis`; `switching_cost` is not an alias.
 
 `run_round` returns a host-facing envelope with `decision`, `state`, and
 **`evaluations`** (per-candidate scores/signals/constraints). The Fala/subprocess

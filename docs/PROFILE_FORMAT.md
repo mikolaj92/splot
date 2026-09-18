@@ -56,7 +56,7 @@ max_parts = 3
 | `weight` / `prefer` / `min` | How Splot normalizes and gates that signal. |
 | `[[constraints]]` | Block / warn / penalize / escalate — commitment protection. |
 | `[decision]` | Rank/commit policy and close-margin behavior. |
-| `[stability]` | Homeostat for `select_one` (e.g. hysteresis). |
+| `[stability]` | Homeostat for `select_one`. Shipped policies: `none`, `hysteresis`. Anything else fails closed. |
 | `[compose]` | Thresholds for `compose_one` (`min_score`, `max_parts`). |
 | `[uncertainty]` | What to do when all blocked or scores are too close (`select_one`). |
 

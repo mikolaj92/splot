@@ -40,4 +40,19 @@ def main() raises:
     except err:
         _check(String(err).find("unsupported decision policy") >= 0, "bad policy error")
 
+    try:
+        _ = run_round(
+            load_profile_text(
+                "mode = \"select_one\"\n[decision]\npolicy = \"constrained_weighted_score\"\n[stability]\npolicy = \"switching_cost\""
+            ),
+            _candidates(),
+            SplotState(),
+        )
+        raise Error("switching_cost stability policy was accepted")
+    except err:
+        _check(
+            String(err).find("unsupported stability policy") >= 0,
+            "switching_cost must fail closed, not alias hysteresis",
+        )
+
     print("splot profile contract smoke ok")

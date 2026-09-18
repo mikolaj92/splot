@@ -85,6 +85,55 @@ def test_load_profile_ok() -> None:
     assert Path(path).is_file()
 
 
+# Public model 0.4.1 exported these; the engine never reads them and fusion_step
+# never fills them. Issue #41: drop unread surface rather than invent callers.
+_DEAD_PUBLIC_MODEL = (
+    ("mojo/splot/models.mojo", "struct Observation"),
+    ("mojo/splot/models.mojo", "source_ids_json"),
+    ("mojo/splot/models.mojo", "var switching_cost"),
+    ("mojo/splot/models.mojo", "stability_memory"),
+    ("mojo/splot/__init__.mojo", "Observation"),
+)
+
+
+def test_public_model_omits_unread_surface() -> None:
+    for rel, token in _DEAD_PUBLIC_MODEL:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert token not in text, f"{rel} still exports unread {token}"
+
+
+def test_state_omits_unread_stability_memory() -> None:
+    import splot
+
+    envelope = splot.fuse_json(FIXTURE_REQ.read_text(encoding="utf-8"))
+    state = envelope["state"]
+    assert isinstance(state, dict)
+    assert "stability_memory" not in state
+    assert "previous_decision" in state
+
+
+def test_switching_cost_stability_policy_fails_closed(tmp_path: Path) -> None:
+    import splot
+
+    profile = tmp_path / "switching_cost.profile.toml"
+    profile.write_text(
+        'mode = "select_one"\n'
+        "[decision]\n"
+        'policy = "constrained_weighted_score"\n'
+        "[stability]\n"
+        'policy = "switching_cost"\n'
+        "min_improvement = 0.15\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(Exception, match="unsupported stability policy"):
+        splot.fuse(
+            profile=profile,
+            candidates=[
+                {"id": "a", "payload": {"available": True, "visibility": 0.9}}
+            ],
+        )
+
+
 def test_compose_one_matches_mojo_smoke() -> None:
     import splot
 
