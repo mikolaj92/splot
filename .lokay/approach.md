@@ -1,32 +1,29 @@
 # Approach plan
 
-<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=38 -->
+<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=40 -->
 
 Repository: `mikolaj92/splot`  
-Issue: #38 — when_close=keep_previous przywraca ghost id; hysteresis z #37 tego nie widzi
+Issue: #40 — Fixture kamery obiecuje waves/min_hold/request_more_evidence; silnik tego nie czyta
 
 ## Goal
 
-`decide_select_one` przy `uncertainty.when_close = "keep_previous"` zwraca poprzedniego kandydata **bez sprawdzenia, czy nadal jest na liście i eligible**. `apply_stability` z #37 (`5db2bd9`) tego nie łapie: gdy `proposed == previous_id`, hysteresis wychodzi na linii 500 i nigdy nie patrzy na `previous_eligible`.
+Shipped fixture `examples/fixtures/player_camera_director.profile.toml` nadal obiecuje klucze, których silnik **nie czyta**. #29 przepisało `examples/profiles/*` (`4de19fd`). Tego fixture nikt nie ruszył — a to on idzie przez `step-fixture`, `core_round`, pytest `fuse` i FunBall.
 
 ## Files likely touched
 
-- `examples/profiles/player-camera-director/profile.toml`
-- `e.eligible`
-- `0.0`
-- `tools/test_product.sh`
-- `stability_eligibility.mojo`
+- `examples/fixtures/player_camera_director.profile.toml`
+- `stab.policy`
 
 ## Test plan
 
-- `when_close = "keep_previous"` zostawia previous tylko gdy jest **obecny i eligible** w tej rundzie
-- Absent albo blocked previous → commit replacement (albo `fallback` / `no_candidate`), nie ghost id
-- Native smoke: close scores + previous unavailable **oraz** previous absent; oba wybierają replacement
-- Smoke wchodzi do `pixi run full-smoke` / `./tools/test_product.sh` (dziś `stability_eligibility.mojo` nie jest w gate)
+- Fixture kamery ma wyłącznie klucze, które pipeline/parser honoruje jako semantykę (`select_one`, builtin readers, `hysteresis`+`min_improvement`, `when_close` / `when_constraints_block_all` shipped)
+- Albo `min_hold_ms` / `cooldown_ms` działają względem `last_switch_at`, albo znikają z fixture
+- `[[waves]]` i `request_more_evidence` znikają albo stają się błędem fail-closed (nie cisza)
+- Smoke/pytest ładuje ten fixture i nie zależy od martwych kluczy
 
 ## Non-goals
 
-- Nowe mode. Zmiana `min_improvement`. Komentarz na zamkniętym #37.
+- Implementacja evidence homeostatu / wave runtime. To osobny produkt, nie cichy dodatek w fixture.
 
 ## Notes
 
