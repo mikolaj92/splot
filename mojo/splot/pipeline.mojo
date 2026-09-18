@@ -495,6 +495,8 @@ def apply_stability(
         return decision.copy()
     var stab = nested(profile, "stability")
     var policy = obj_string(stab, "policy", "none")
+    if policy != "none" and policy != "hysteresis":
+        raise Error("splot: unsupported stability policy: " + policy)
     if policy == "none" or decision.status != "selected":
         return decision.copy()
     var prev = parse_json(state.previous_decision_json)
@@ -515,20 +517,19 @@ def apply_stability(
     if not previous_eligible:
         return decision.copy()
     var margin = proposed_score - previous_score
-    if policy == "hysteresis" or policy == "prefer_current_when_close" or policy == "switching_cost":
-        if margin < min_improvement:
-            return Decision(
-                decision.id,
-                "selected",
-                decision.objective_id,
-                previous_id,
-                previous_score,
-                1.0 - previous_score,
-                "keep_previous_hysteresis",
-                "score margin below min_improvement",
-                decision.warnings_json,
-                decision.composed_json,
-            )
+    if margin < min_improvement:
+        return Decision(
+            decision.id,
+            "selected",
+            decision.objective_id,
+            previous_id,
+            previous_score,
+            1.0 - previous_score,
+            "keep_previous_hysteresis",
+            "score margin below min_improvement",
+            decision.warnings_json,
+            decision.composed_json,
+        )
     return decision.copy()
 
 

@@ -52,7 +52,6 @@ def _state_from_input(root: Value) raises -> SplotState:
         prev,
         obj_string(st, "last_decision_at", ""),
         obj_string(st, "last_switch_at", ""),
-        "{}",
     )
 
 

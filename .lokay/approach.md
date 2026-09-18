@@ -1,32 +1,29 @@
 # Approach plan
 
-<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=38 -->
+<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=41 -->
 
 Repository: `mikolaj92/splot`  
-Issue: #38 — when_close=keep_previous przywraca ghost id; hysteresis z #37 tego nie widzi
+Issue: #41 — [code-audit] Observation, switching_cost, source_ids, stability_memory — martwy publiczny model
 
 ## Goal
 
-`decide_select_one` przy `uncertainty.when_close = "keep_previous"` zwraca poprzedniego kandydata **bez sprawdzenia, czy nadal jest na liście i eligible**. `apply_stability` z #37 (`5db2bd9`) tego nie łapie: gdy `proposed == previous_id`, hysteresis wychodzi na linii 500 i nigdy nie patrzy na `previous_eligible`.
+Publiczny model 0.4.1 eksportuje pola i typ, których silnik **nigdy nie czyta** i których JSON-owy `fusion_step` **nigdy nie wypełnia**. Host widzi je w `state` / Mojo API i myśli, że homeostat albo fale z nich korzystają.
 
 ## Files likely touched
 
-- `examples/profiles/player-camera-director/profile.toml`
-- `e.eligible`
-- `0.0`
-- `tools/test_product.sh`
-- `stability_eligibility.mojo`
+- `models.mojo`
+- `__init__.mojo`
 
 ## Test plan
 
-- `when_close = "keep_previous"` zostawia previous tylko gdy jest **obecny i eligible** w tej rundzie
-- Absent albo blocked previous → commit replacement (albo `fallback` / `no_candidate`), nie ghost id
-- Native smoke: close scores + previous unavailable **oraz** previous absent; oba wybierają replacement
-- Smoke wchodzi do `pixi run full-smoke` / `./tools/test_product.sh` (dziś `stability_eligibility.mojo` nie jest w gate)
+- `Observation` znika z produktu albo ma jednego callera i smoke
+- `source_ids_json` / `switching_cost` albo wchodzą do JSON contract + pipeline, albo znikają z `Candidate`
+- `stability_memory` albo jest czytane przez homeostat, albo nie wychodzi w `SplotState.to_json`
+- `stability.policy = "switching_cost"` albo używa kosztu kandydata, albo fail-closed jako nieobsługiwane (dziś alias hysteresis)
 
 ## Non-goals
 
-- Nowe mode. Zmiana `min_improvement`. Komentarz na zamkniętym #37.
+- Implementacja wave runtime / Observation pipeline. #40 (fixture waves).
 
 ## Notes
 

@@ -9,7 +9,6 @@ comptime SPLOT_VERSION = "0.4.1"
 
 from .models import (
     Candidate,
-    Observation,
     Signal,
     ConstraintResult,
     CandidateEvaluation,
