@@ -297,7 +297,8 @@ decision, state, evaluations = splot.fuse(
     candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
     include_evaluations=True,
 )
-# evaluations is the same list as fuse_json(..., include_evaluations=True)
+# With fuse_json, set "include_evaluations": True inside the request mapping
+# and read the returned envelope["evaluations"] for the same list.
 ```
 
 `tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine. `fuse` is the typed pair/triple over that envelope — not a second fail-closed.
