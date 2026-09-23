@@ -91,6 +91,19 @@ def test_fuse_include_evaluations_returns_evaluations() -> None:
     assert "score" in cam_a
 
 
+def test_readme_python_binding_example() -> None:
+    """Keep the documented fuse/fuse_json comparison executable."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Thin Python binding (optional)", 1)[1]
+    example = section.split("```python\n", 1)[1].split("```", 1)[0]
+    namespace = {}
+
+    exec(compile(example, "README.md", "exec"), namespace)
+
+    assert namespace["decision"]["selected_candidate_id"] == "cam_a"
+    assert namespace["evaluations"]
+
+
 def test_fuse_json_include_evaluations_attaches_detail() -> None:
     import splot
 
