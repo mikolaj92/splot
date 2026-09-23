@@ -297,8 +297,12 @@ decision, state, evaluations = splot.fuse(
     candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
     include_evaluations=True,
 )
-# With fuse_json, set "include_evaluations": True inside the request mapping
-# and read the returned envelope["evaluations"] for the same list.
+# fuse_json takes the flag inside its request mapping, not as a keyword argument.
+assert evaluations == splot.fuse_json({
+    "profile": "examples/fixtures/player_camera_director.profile.toml",
+    "candidates": [{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
+    "include_evaluations": True,
+})["evaluations"]
 ```
 
 `tools/splot_step.sh` stays the official Fala subprocess contract. No dual engine. `fuse` is the typed pair/triple over that envelope — not a second fail-closed.
