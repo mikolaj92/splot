@@ -297,7 +297,8 @@ decision, state, evaluations = splot.fuse(
     candidates=[{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
     include_evaluations=True,
 )
-# fuse_json takes the flag inside its request mapping, not as a keyword argument.
+# fuse_json(request_json) accepts one mapping or JSON string, with no flag kwargs.
+# Put include_evaluations in the request and read evaluations from the envelope.
 assert evaluations == splot.fuse_json({
     "profile": "examples/fixtures/player_camera_director.profile.toml",
     "candidates": [{"id": "cam_a", "payload": {"visibility": 0.9, "available": True}}],
