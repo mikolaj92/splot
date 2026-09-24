@@ -6,6 +6,10 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## Unreleased
+
+- `splot.fuse` matches `fusion_step`: empty `candidates` is `no_candidate`; `include_evaluations=True` returns `(decision, state, evaluations)`.
+
 ## 0.4.1
 
 - Pixi/uv on stable Mojo **1.0.0** (drop nightly `1.0.0b3`).
