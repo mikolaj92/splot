@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -42,6 +43,19 @@ def test_mojo_env_prefers_detected_pixi_sdk_over_inherited_paths(
     assert env["MODULAR_HOME"] == str(pixi_root / "share" / "max")
     assert env["MODULAR_MOJO_MAX_DRIVER_PATH"] == str(mojo_bin)
     assert env["MODULAR_MOJO_MAX_IMPORT_PATH"] == str(import_path)
+
+
+def test_release_version_is_consistent() -> None:
+    import splot
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    mojo_init = (ROOT / "mojo/splot/__init__.mojo").read_text(encoding="utf-8")
+
+    assert splot.__version__ == "1.0.0"
+    assert pyproject["project"]["version"] == splot.__version__
+    assert pixi["workspace"]["version"] == splot.__version__
+    assert f'comptime SPLOT_VERSION = "{splot.__version__}"' in mojo_init
 
 
 def test_fuse_fixture_selects_cam_a() -> None:

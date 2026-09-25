@@ -1,6 +1,6 @@
 [project]
 name = "splot"
-version = "0.4.1"
+version = "1.0.0"
 description = "Generic fusion organ: Mojo engine + thin optional Python binding (fuse)."
 readme = "README.md"
 requires-python = ">=3.12"

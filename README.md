@@ -1,6 +1,6 @@
 # Splot
 
-**Version 0.4.1** — exclusive Mojo engine + optional thin Python binding (`fuse`).
+**Version 1.0.0** — exclusive Mojo engine + optional thin Python binding (`fuse`).
 
 **Splot is a Mojo library.** There is no YAML, no database, and no report store.
 An optional Python package (`python/splot`) is a JSON bridge to the same Mojo

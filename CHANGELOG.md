@@ -6,13 +6,16 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## 1.0.0
+
+- **Breaking:** Drop unread public model: `Observation`, `Candidate.source_ids_json` / `switching_cost`, and `state.stability_memory`. `stability.policy = "switching_cost"` fails closed (it was a silent hysteresis alias).
+
 ## 0.4.1
 
 - Pixi/uv on stable Mojo **1.0.0** (drop nightly `1.0.0b3`).
 - Clone EmberJson at `951f4ef` and apply the same Mojo 1.0 patch as Fala/Takt; do not keep EmberJson in git.
 - Fail closed on TOML slice bounds at EOF (Mojo 1.0 `String` slices no longer allow past-the-end peeks).
 - Product gate runs `mojo/smoke/stability_eligibility.mojo` in `pixi run full-smoke`; pytest covers the same blocked/absent previous cases via `fuse`.
-- Drop unread public model: `Observation`, `Candidate.source_ids_json` / `switching_cost`, and `state.stability_memory`. `stability.policy = "switching_cost"` fails closed (it was a silent hysteresis alias).
 
 ## 0.4.0
 
