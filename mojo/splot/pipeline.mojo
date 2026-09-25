@@ -490,13 +490,13 @@ def apply_stability(
     decision: Decision,
 ) raises -> Decision:
     var mode = _validate_decision_contract(profile)
-    # Stability homeostat applies to select_one stickiness; compose recomputes parts each round.
-    if mode == "compose_one":
-        return decision.copy()
     var stab = nested(profile, "stability")
     var policy = obj_string(stab, "policy", "none")
     if policy != "none" and policy != "hysteresis":
         raise Error("splot: unsupported stability policy: " + policy)
+    # Stability homeostat applies to select_one stickiness; compose recomputes parts each round.
+    if mode == "compose_one":
+        return decision.copy()
     if policy == "none" or decision.status != "selected":
         return decision.copy()
     var prev = parse_json(state.previous_decision_json)
