@@ -6,8 +6,9 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
-## Unreleased
+## 1.0.0
 
+- **Breaking:** Drop unread public model: `Observation`, `Candidate.source_ids_json` / `switching_cost`, and `state.stability_memory`. `stability.policy = "switching_cost"` fails closed (it was a silent hysteresis alias).
 - Ship `python/splot/py.typed` so the `Typing :: Typed` classifier is a PEP 561 package.
 
 ## 0.4.1

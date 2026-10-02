@@ -1,6 +1,6 @@
 [workspace]
 name = "splot"
-version = "0.4.1"
+version = "1.0.0"
 channels = ["https://conda.modular.com/max", "conda-forge"]
 platforms = ["osx-arm64"]
 
