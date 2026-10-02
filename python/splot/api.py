@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Literal, Mapping, Sequence, overload
 
 from splot._build import ensure_native
 
@@ -27,6 +27,30 @@ def load_profile(path: str | Path) -> str:
     return str(p.resolve())
 
 
+@overload
+def fuse(
+    *,
+    profile: ProfileLike,
+    candidates: Sequence[CandidateLike],
+    state: StateLike = None,
+    readers: ReadersLike = None,
+    now: str | None = None,
+    include_evaluations: Literal[False] = False,
+) -> tuple[dict[str, Any], dict[str, Any]]: ...
+
+
+@overload
+def fuse(
+    *,
+    profile: ProfileLike,
+    candidates: Sequence[CandidateLike],
+    state: StateLike = None,
+    readers: ReadersLike = None,
+    now: str | None = None,
+    include_evaluations: Literal[True],
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]: ...
+
+
 def fuse(
     *,
     profile: ProfileLike,
@@ -35,11 +59,13 @@ def fuse(
     readers: ReadersLike = None,
     now: str | None = None,
     include_evaluations: bool = False,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """One fusion round. Returns ``(decision, new_state)`` as plain dicts."""
-    if not candidates:
-        raise ValueError("splot.fuse: candidates must be non-empty")
+) -> tuple[dict[str, Any], dict[str, Any]] | tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    """One fusion round. Same organ as ``fusion_step`` / ``fuse_json``.
 
+    Returns ``(decision, new_state)``. With ``include_evaluations=True``,
+    returns ``(decision, new_state, evaluations)``. Empty ``candidates`` is a
+    valid round: status ``no_candidate``.
+    """
     request: dict[str, Any] = {
         "candidates": [dict(c) for c in candidates],
     }
@@ -63,6 +89,11 @@ def fuse(
     new_state = envelope.get("state")
     if not isinstance(decision, dict) or not isinstance(new_state, dict):
         raise RuntimeError("splot: missing decision/state in fusion result")
+    if include_evaluations:
+        evaluations = envelope.get("evaluations")
+        if not isinstance(evaluations, list):
+            raise RuntimeError("splot: missing evaluations in fusion result")
+        return decision, new_state, evaluations
     return decision, new_state
 
 

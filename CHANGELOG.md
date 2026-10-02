@@ -6,6 +6,10 @@ Splot follows semantic versioning:
 - **minor** — backward-compatible engine or profile surface additions  
 - **major** — breaking changes to the public decision / profile contract  
 
+## Unreleased
+
+- `splot.fuse` matches `fusion_step`: empty `candidates` is `no_candidate`; `include_evaluations=True` returns `(decision, state, evaluations)`.
+
 ## 1.0.0
 
 - **Breaking:** Drop unread public model: `Observation`, `Candidate.source_ids_json` / `switching_cost`, and `state.stability_memory`. `stability.policy = "switching_cost"` fails closed (it was a silent hysteresis alias).
