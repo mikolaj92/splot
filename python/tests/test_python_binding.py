@@ -148,6 +148,25 @@ def test_switching_cost_stability_policy_fails_closed(tmp_path: Path) -> None:
         )
 
 
+# Keys the engine does not honor. Issue #29 stripped them from examples/profiles/;
+# the live camera fixture is the 0.4.x contract hosts actually copy.
+_UNREAD_CAMERA_FIXTURE_KEYS = (
+    "[[waves]]",
+    "min_hold_ms",
+    "cooldown_ms",
+    "prefer_current_when_close",
+    "when_conflicting",
+    "when_source_stale",
+    "request_more_evidence",
+)
+
+
+def test_camera_fixture_omits_unread_keys() -> None:
+    text = FIXTURE_PROFILE.read_text(encoding="utf-8")
+    for key in _UNREAD_CAMERA_FIXTURE_KEYS:
+        assert key not in text, f"camera fixture still promises unread key {key}"
+
+
 def test_compose_one_matches_mojo_smoke() -> None:
     import splot
 

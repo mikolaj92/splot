@@ -9,6 +9,7 @@ Splot follows semantic versioning:
 ## 1.0.0
 
 - **Breaking:** Drop unread public model: `Observation`, `Candidate.source_ids_json` / `switching_cost`, and `state.stability_memory`. `stability.policy = "switching_cost"` fails closed (it was a silent hysteresis alias).
+- Ship `python/splot/py.typed` so the `Typing :: Typed` classifier is a PEP 561 package.
 
 ## 0.4.1
 
@@ -16,6 +17,7 @@ Splot follows semantic versioning:
 - Clone EmberJson at `951f4ef` and apply the same Mojo 1.0 patch as Fala/Takt; do not keep EmberJson in git.
 - Fail closed on TOML slice bounds at EOF (Mojo 1.0 `String` slices no longer allow past-the-end peeks).
 - Product gate runs `mojo/smoke/stability_eligibility.mojo` in `pixi run full-smoke`; pytest covers the same blocked/absent previous cases via `fuse`.
+- Camera fixture no longer promises unread `[[waves]]`, hold/cooldown, or `request_more_evidence` keys.
 
 ## 0.4.0
 

@@ -1,29 +1,29 @@
 # Approach plan
 
-<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=41 -->
+<!-- lokay-approach source=deterministic repo=mikolaj92/splot issue=40 -->
 
 Repository: `mikolaj92/splot`  
-Issue: #41 — [code-audit] Observation, switching_cost, source_ids, stability_memory — martwy publiczny model
+Issue: #40 — Fixture kamery obiecuje waves/min_hold/request_more_evidence; silnik tego nie czyta
 
 ## Goal
 
-Publiczny model 0.4.1 eksportuje pola i typ, których silnik **nigdy nie czyta** i których JSON-owy `fusion_step` **nigdy nie wypełnia**. Host widzi je w `state` / Mojo API i myśli, że homeostat albo fale z nich korzystają.
+Shipped fixture `examples/fixtures/player_camera_director.profile.toml` nadal obiecuje klucze, których silnik **nie czyta**. #29 przepisało `examples/profiles/*` (`4de19fd`). Tego fixture nikt nie ruszył — a to on idzie przez `step-fixture`, `core_round`, pytest `fuse` i FunBall.
 
 ## Files likely touched
 
-- `models.mojo`
-- `__init__.mojo`
+- `examples/fixtures/player_camera_director.profile.toml`
+- `stab.policy`
 
 ## Test plan
 
-- `Observation` znika z produktu albo ma jednego callera i smoke
-- `source_ids_json` / `switching_cost` albo wchodzą do JSON contract + pipeline, albo znikają z `Candidate`
-- `stability_memory` albo jest czytane przez homeostat, albo nie wychodzi w `SplotState.to_json`
-- `stability.policy = "switching_cost"` albo używa kosztu kandydata, albo fail-closed jako nieobsługiwane (dziś alias hysteresis)
+- Fixture kamery ma wyłącznie klucze, które pipeline/parser honoruje jako semantykę (`select_one`, builtin readers, `hysteresis`+`min_improvement`, `when_close` / `when_constraints_block_all` shipped)
+- Albo `min_hold_ms` / `cooldown_ms` działają względem `last_switch_at`, albo znikają z fixture
+- `[[waves]]` i `request_more_evidence` znikają albo stają się błędem fail-closed (nie cisza)
+- Smoke/pytest ładuje ten fixture i nie zależy od martwych kluczy
 
 ## Non-goals
 
-- Implementacja wave runtime / Observation pipeline. #40 (fixture waves).
+- Implementacja evidence homeostatu / wave runtime. To osobny produkt, nie cichy dodatek w fixture.
 
 ## Notes
 
