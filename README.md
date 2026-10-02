@@ -1,6 +1,6 @@
 # Splot
 
-**Version 0.4.1** — exclusive Mojo engine + optional thin Python binding (`fuse`).
+**Version 1.0.0** — exclusive Mojo engine + optional thin Python binding (`fuse`).
 
 **Splot is a Mojo library.** There is no YAML, no database, and no report store.
 An optional Python package (`python/splot`) is a JSON bridge to the same Mojo
@@ -175,8 +175,9 @@ Statuses in normal use: `selected`, `composed`, `fallback`,
 | `select_one` (default) | one candidate id |
 | `compose_one` | one multi-stream composition (`decision.composed` parts + primary id) |
 
-Any other `mode` or decision `policy` fails closed. Shipped policies are
-`constrained_weighted_score` and `weighted_score`.
+Any other `mode` or decision `policy` fails closed. Shipped decision policies are
+`constrained_weighted_score` and `weighted_score`. Shipped stability policies
+are `none` and `hysteresis`; `switching_cost` is not an alias.
 
 `run_round` returns a host-facing envelope with `decision`, `state`, and
 **`evaluations`** (per-candidate scores/signals/constraints). The Fala/subprocess

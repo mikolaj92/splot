@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -42,6 +43,19 @@ def test_mojo_env_prefers_detected_pixi_sdk_over_inherited_paths(
     assert env["MODULAR_HOME"] == str(pixi_root / "share" / "max")
     assert env["MODULAR_MOJO_MAX_DRIVER_PATH"] == str(mojo_bin)
     assert env["MODULAR_MOJO_MAX_IMPORT_PATH"] == str(import_path)
+
+
+def test_release_version_is_consistent() -> None:
+    import splot
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    mojo_init = (ROOT / "mojo/splot/__init__.mojo").read_text(encoding="utf-8")
+
+    assert splot.__version__ == "1.0.0"
+    assert pyproject["project"]["version"] == splot.__version__
+    assert pixi["workspace"]["version"] == splot.__version__
+    assert f'comptime SPLOT_VERSION = "{splot.__version__}"' in mojo_init
 
 
 def test_fuse_fixture_selects_cam_a() -> None:
@@ -173,6 +187,74 @@ def test_load_profile_ok() -> None:
 
     path = splot.load_profile(FIXTURE_PROFILE)
     assert Path(path).is_file()
+
+
+# Public model 0.4.1 exported these; the engine never reads them and fusion_step
+# never fills them. Issue #41: drop unread surface rather than invent callers.
+_DEAD_PUBLIC_MODEL = (
+    ("mojo/splot/models.mojo", "struct Observation"),
+    ("mojo/splot/models.mojo", "source_ids_json"),
+    ("mojo/splot/models.mojo", "var switching_cost"),
+    ("mojo/splot/models.mojo", "stability_memory"),
+    ("mojo/splot/__init__.mojo", "Observation"),
+)
+
+
+def test_public_model_omits_unread_surface() -> None:
+    for rel, token in _DEAD_PUBLIC_MODEL:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert token not in text, f"{rel} still exports unread {token}"
+
+
+def test_state_omits_unread_stability_memory() -> None:
+    import splot
+
+    envelope = splot.fuse_json(FIXTURE_REQ.read_text(encoding="utf-8"))
+    state = envelope["state"]
+    assert isinstance(state, dict)
+    assert "stability_memory" not in state
+    assert "previous_decision" in state
+
+
+def test_switching_cost_stability_policy_fails_closed(tmp_path: Path) -> None:
+    import splot
+
+    profile = tmp_path / "switching_cost.profile.toml"
+    profile.write_text(
+        'mode = "select_one"\n'
+        "[decision]\n"
+        'policy = "constrained_weighted_score"\n'
+        "[stability]\n"
+        'policy = "switching_cost"\n'
+        "min_improvement = 0.15\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(Exception, match="unsupported stability policy"):
+        splot.fuse(
+            profile=profile,
+            candidates=[
+                {"id": "a", "payload": {"available": True, "visibility": 0.9}}
+            ],
+        )
+
+
+# Keys the engine does not honor. Issue #29 stripped them from examples/profiles/;
+# the live camera fixture is the 0.4.x contract hosts actually copy.
+_UNREAD_CAMERA_FIXTURE_KEYS = (
+    "[[waves]]",
+    "min_hold_ms",
+    "cooldown_ms",
+    "prefer_current_when_close",
+    "when_conflicting",
+    "when_source_stale",
+    "request_more_evidence",
+)
+
+
+def test_camera_fixture_omits_unread_keys() -> None:
+    text = FIXTURE_PROFILE.read_text(encoding="utf-8")
+    for key in _UNREAD_CAMERA_FIXTURE_KEYS:
+        assert key not in text, f"camera fixture still promises unread key {key}"
 
 
 def test_compose_one_matches_mojo_smoke() -> None:

@@ -14,54 +14,21 @@ struct Candidate(Copyable, Movable):
     var id: String
     var payload_json: String  # object
     var metadata_json: String
-    var source_ids_json: String  # array
-    var switching_cost: Float64
 
     def __init__(
         out self,
         id: String,
         payload_json: String = "{}",
         metadata_json: String = "{}",
-        source_ids_json: String = "[]",
-        switching_cost: Float64 = 0.0,
     ):
         self.id = id
         self.payload_json = payload_json
         self.metadata_json = metadata_json
-        self.source_ids_json = source_ids_json
-        self.switching_cost = switching_cost
 
     def __init__(out self, *, copy: Self):
         self.id = copy.id
         self.payload_json = copy.payload_json
         self.metadata_json = copy.metadata_json
-        self.source_ids_json = copy.source_ids_json
-        self.switching_cost = copy.switching_cost
-
-
-struct Observation(Copyable, Movable):
-    var id: String
-    var wave_id: String
-    var values_json: String
-    var confidence: Float64
-
-    def __init__(
-        out self,
-        id: String,
-        wave_id: String = "",
-        values_json: String = "{}",
-        confidence: Float64 = 1.0,
-    ):
-        self.id = id
-        self.wave_id = wave_id
-        self.values_json = values_json
-        self.confidence = confidence
-
-    def __init__(out self, *, copy: Self):
-        self.id = copy.id
-        self.wave_id = copy.wave_id
-        self.values_json = copy.values_json
-        self.confidence = copy.confidence
 
 
 struct Signal(Copyable, Movable):
@@ -332,25 +299,21 @@ struct SplotState(Copyable, Movable):
     var previous_decision_json: String
     var last_decision_at: String
     var last_switch_at: String
-    var stability_memory_json: String
 
     def __init__(
         out self,
         previous_decision_json: String = "{}",
         last_decision_at: String = "",
         last_switch_at: String = "",
-        stability_memory_json: String = "{}",
     ):
         self.previous_decision_json = previous_decision_json
         self.last_decision_at = last_decision_at
         self.last_switch_at = last_switch_at
-        self.stability_memory_json = stability_memory_json
 
     def __init__(out self, *, copy: Self):
         self.previous_decision_json = copy.previous_decision_json
         self.last_decision_at = copy.last_decision_at
         self.last_switch_at = copy.last_switch_at
-        self.stability_memory_json = copy.stability_memory_json
 
     def to_json(self) -> String:
         return (
@@ -360,8 +323,6 @@ struct SplotState(Copyable, Movable):
             + quote(self.last_decision_at)
             + ",\"last_switch_at\":"
             + quote(self.last_switch_at)
-            + ",\"stability_memory\":"
-            + self.stability_memory_json
             + "}"
         )
 

@@ -24,6 +24,7 @@ def main() raises:
     _check(out.find("splot.decision_committed") >= 0, "event emitted")
     _check(out.find("\"selected_candidate_id\":\"a\"") >= 0, "winner a")
     _check(out.find("decision_report") < 0, "no report product")
+    _check(out.find("stability_memory") < 0, "no unread stability_memory")
     # Historical name stays wired for older Fala hosts.
     var compat = arbitration_step(payload)
     _check(compat.find("\"selected_candidate_id\":\"a\"") >= 0, "arbitration_step alias")
