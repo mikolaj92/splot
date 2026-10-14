@@ -14,4 +14,5 @@ python/splot/__mojocache__/
 __mojocache__/
 .venv-pybind/
 .pixi/
+/.lokay/
 vendor/
