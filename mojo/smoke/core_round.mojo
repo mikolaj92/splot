@@ -50,4 +50,16 @@ def main() raises:
     var fb = run_round(profile, blocked, SplotState(), "2026-01-01T00:00:01Z")
     _check(fb.decision.status == "fallback" or fb.decision.selected_candidate_id == "", "blocked all fallback")
 
+    var empty = List[Candidate]()
+    var no_camera = run_round(profile, empty, SplotState(), "2026-01-01T00:00:02Z")
+    _check(no_camera.decision.status == "no_candidate", "empty select_one status")
+    _check(no_camera.decision.policy_reason == "when_no_candidate", "empty select_one reason")
+    _check(no_camera.decision.selected_candidate_id == "", "empty select_one candidate")
+
+    var compose_profile = load_profile_toml("examples/fixtures/compose_streams.profile.toml")
+    var no_stream = run_round(compose_profile, empty, SplotState(), "2026-01-01T00:00:02Z")
+    _check(no_stream.decision.status == "no_candidate", "empty compose_one status")
+    _check(no_stream.decision.policy_reason == "when_no_candidate", "empty compose_one reason")
+    _check(no_stream.decision.selected_candidate_id == "", "empty compose_one candidate")
+
     print("splot core round smoke ok")

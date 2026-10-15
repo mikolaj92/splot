@@ -67,5 +67,4 @@ min_improvement = 0.15
 
 [uncertainty]
 when_close = "keep_previous"
-when_no_candidate = "fallback"
 when_constraints_block_all = "fallback"
