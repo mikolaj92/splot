@@ -121,7 +121,10 @@ export SPLOT_REQUEST_PATH=examples/fixtures/player_camera_director.request.json
 # With FALA_EFFECTOR_OUTPUT_DIR set, writes output/result.json
 ```
 
-Missing request input fails closed; the wrapper never substitutes an example fixture.
+`SPLOT_REQUEST_PATH` takes precedence. Otherwise, an existing `FALA_EFFECTOR_MANIFEST`
+enables reading `request.json` from `FALA_EFFECTOR_INPUT_DIR`, then a fusion payload
+from `manifest.input` if that file is absent. Neither argv nor stdin supplies input.
+Missing request input fails with `request path required`; no example fixture is substituted.
 
 Fala integration proof (sibling checkout):
 
