@@ -60,6 +60,8 @@ max_parts = 3
 | `[compose]` | Thresholds for `compose_one` (`min_score`, `max_parts`). |
 | `[uncertainty]` | What to do when all blocked or scores are too close (`select_one`). |
 
+For empty `candidates`, both modes always return `status="no_candidate"`, `policy_reason="when_no_candidate"`, and an empty `selected_candidate_id`, regardless of the profile.
+
 ### Builtin readers (not evaluators)
 
 | Name | Role |
