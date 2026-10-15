@@ -58,4 +58,4 @@ testpaths = ["python/tests"]
 pythonpath = ["python"]
 
 [tool.lokay]
-test = "./tools/test_product.sh"
+test = "pixi run full-smoke"
