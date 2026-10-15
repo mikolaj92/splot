@@ -100,18 +100,15 @@ tools/          mojo_run.sh, splot_step.sh (Fala effector)
 
 ## Quick proof
 
-Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). EmberJson is cloned + patched at first smoke (`tools/setup_ember_json.sh`), not vendored in git:
+Requires Pixi Mojo **1.0.0** (`pixi.toml` channel `conda.modular.com/max`). The task clones and patches EmberJson before running the smoke:
 
 ```bash
-./tools/mojo_run.sh mojo/smoke/core_round.mojo
-./tools/mojo_run.sh mojo/smoke/fala_stdio.mojo
-# Complete product gate (Mojo smokes + thin Python parity):
-./tools/test_product.sh
+pixi run core-round
 ```
 
 Hysteresis eligibility (blocked or absent previous candidate) is gated by
 `mojo/smoke/stability_eligibility.mojo` inside `pixi run full-smoke`.
-`./tools/test_product.sh` / `[tool.lokay] test` cannot pass if that smoke
+`[tool.lokay] test` runs `pixi run full-smoke` and cannot pass if that smoke
 fails. Pytest covers the same cases through the thin Python binding — not a
 second engine.
 

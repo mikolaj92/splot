@@ -3,6 +3,10 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:?mojo file}"
+if [[ ! -d "$root/vendor/EmberJson" ]]; then
+  echo "Missing dependency: vendor/EmberJson; run pixi run setup-ember-json" >&2
+  exit 1
+fi
 case "$target" in
   /*) file="$target" ;;
   *) file="$root/$target" ;;
