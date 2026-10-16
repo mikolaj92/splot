@@ -188,6 +188,14 @@ struct CandidateEvaluation(Copyable, Movable):
             warns += quote(w)
             i += 1
         warns += "]"
+        var human_decisions = String("[")
+        i = 0
+        for reason in self.human_decisions:
+            if i > 0:
+                human_decisions += ","
+            human_decisions += quote(reason)
+            i += 1
+        human_decisions += "]"
         var rejected = String("[")
         i = 0
         for r in self.rejected_reasons:
@@ -211,6 +219,8 @@ struct CandidateEvaluation(Copyable, Movable):
             + cons
             + ",\"warnings\":"
             + warns
+            + ",\"human_decisions\":"
+            + human_decisions
             + ",\"rejected_reasons\":"
             + rejected
             + "}"

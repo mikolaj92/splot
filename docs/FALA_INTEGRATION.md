@@ -18,7 +18,8 @@ Splot only fuses those payloads under a TOML profile into **one commitment**.
 | Process / effector | one fusion step / stdio line (`fusion_step`; `arbitration_step` is a historical alias) |
 | Candidate payloads | `candidates[]` or `carriers[]` — signals **already evaluated** |
 | Decision | `decision.status` + `selected_candidate_id` |
-| Homeostat (optional) | `needs_human_decision` + `gates` |
+| Homeostat (optional) | `select_one` stability: hysteresis, close margin, keep previous |
+| Human decision | `human_decision` constraints → `needs_human_decision`; reasons in `evaluations[].human_decisions` |
 | Evaluators / media / RAG | **not in Splot** |
 
 ## Input (JSON)

@@ -79,11 +79,13 @@ def apply_constraints(
             if not item.is_object():
                 continue
             var cfg = item.copy()
+            var severity = obj_string(cfg, "severity", "block")
+            if severity != "block" and severity != "warn" and severity != "penalize" and severity != "human_decision":
+                raise Error("splot: unsupported profile severity: " + severity)
             var sid = obj_string(cfg, "id")
             if sid not in by_id:
                 continue
             var signal = by_id[sid].copy()
-            var severity = obj_string(cfg, "severity", "block")
             var penalty = obj_float(cfg, "penalty", 0.0)
             if severity != "penalize":
                 penalty = 0.0
@@ -117,8 +119,10 @@ def apply_constraints(
             if not item.is_object():
                 continue
             var cfg = item.copy()
-            var cid = obj_string(cfg, "id")
             var severity = obj_string(cfg, "severity", "block")
+            if severity != "block" and severity != "warn" and severity != "penalize" and severity != "human_decision":
+                raise Error("splot: unsupported profile severity: " + severity)
+            var cid = obj_string(cfg, "id")
             var provider = obj_string(cfg, "provider", "")
             var passed = True
             var reason = obj_string(cfg, "reason", cid)

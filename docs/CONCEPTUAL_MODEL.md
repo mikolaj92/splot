@@ -81,7 +81,7 @@ rest (correlator, homeostat, feedback).
 | **Distortion** | Reliability, stale, confidence — first-class *when the host supplies them* |
 | **Homeostat** | Stability rules (hysteresis, close margin, keep previous) so the output does not re-inject entropy by thrashing |
 | **Feedback** | Committed decision acts via host effectors; new observations enter the next round |
-| **Self-protection** | Constraints (block / warn / penalize / escalate) — profile policy, not a management console |
+| **Self-protection** | Constraints (block / warn / penalize / human_decision) — profile policy, not a management console |
 
 ## Concepts
 
