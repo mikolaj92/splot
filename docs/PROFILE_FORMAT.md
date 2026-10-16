@@ -54,11 +54,13 @@ max_parts = 3
 | `provider = "candidate.value"` | Read `field` from the candidate JSON payload (host already set the number). |
 | Host providers | Any other name must be registered on `ReaderRegistry` (or `readers` in fusion JSON) with a **recipe** that only maps payload fields. |
 | `weight` / `prefer` / `min` | How Splot normalizes and gates that signal. |
-| `[[constraints]]` | Block / warn / penalize / escalate — commitment protection. |
+| `[[constraints]]` | `block` / `warn` / `penalize` / `human_decision` — commitment protection. |
 | `[decision]` | Rank/commit policy and close-margin behavior. |
 | `[stability]` | Homeostat for `select_one`. Shipped policies: `none`, `hysteresis`. Anything else fails closed. |
 | `[compose]` | Thresholds for `compose_one` (`min_score`, `max_parts`). |
 | `[uncertainty]` | What to do when all blocked or scores are too close (`select_one`). |
+
+In `signals` and `constraints`, omitted `severity` defaults to `block`. Unknown values (including `escalate`) raise a profile error during candidate evaluation, even when the condition passes.
 
 For empty `candidates`, both modes always return `status="no_candidate"`, `policy_reason="when_no_candidate"`, and an empty `selected_candidate_id`, regardless of the profile.
 
