@@ -159,16 +159,3 @@ def fusion_step(input_json: String) raises -> String:
 def arbitration_step(input_json: String) raises -> String:
     """Historical alias for `fusion_step` (Fala / older hosts). Prefer fusion_step."""
     return fusion_step(input_json)
-
-
-def run_stdio_line(line: String) raises -> String:
-    """One-line process step used by Fala subprocess effectors."""
-    var root = parse_json(line)
-    if root.is_object() and "input" in root.object():
-        var inp = root.object()["input"].copy()
-        if inp.is_object() and "values" in inp.object():
-            var values = inp.object()["values"].copy()
-            if root.is_object() and "config" in root.object() and root.object()["config"].is_object():
-                return fusion_step(to_string(values))
-            return fusion_step(to_string(values))
-    return fusion_step(line)
