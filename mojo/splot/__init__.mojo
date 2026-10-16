@@ -29,4 +29,4 @@ from .registry import ReaderRegistry
 from .json_util import parse_json
 from .profile import load_profile_toml, load_profile_text
 from .toml import parse_toml_value, parse_toml_json
-from .adapters_fala import fusion_step, arbitration_step, run_stdio_line
+from .adapters_fala import fusion_step, arbitration_step
