@@ -112,6 +112,10 @@ Hysteresis eligibility (blocked or absent previous candidate) is gated by
 fails. Pytest covers the same cases through the thin Python binding — not a
 second engine.
 
+```bash
+uv run --locked --group dev pytest
+```
+
 ### One step as a subprocess (Fala-compatible)
 
 ```bash

@@ -21,11 +21,6 @@ Repository = "https://github.com/mikolaj92/splot"
 Issues = "https://github.com/mikolaj92/splot/issues"
 Changelog = "https://github.com/mikolaj92/splot/blob/main/CHANGELOG.md"
 
-[project.optional-dependencies]
-dev = [
-  "pytest>=8.0",
-]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
