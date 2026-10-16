@@ -33,7 +33,7 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["python/splot"]
 # Ship Mojo sources so the binding can compile against the engine at first use.
-force-include = { "mojo" = "mojo", "tools" = "tools", "patches" = "patches" }
+force-include = { "mojo" = "splot/_engine/mojo", "tools" = "splot/_engine/tools", "patches" = "splot/_engine/patches" }
 
 [tool.hatch.build.targets.sdist]
 include = [

@@ -24,12 +24,17 @@ def repo_root() -> Path:
     env = os.environ.get("SPLOT_HOME")
     if env:
         return Path(env).expanduser().resolve()
-    for candidate in (_PACKAGE_DIR.parents[2], _PACKAGE_DIR.parent, Path.cwd()):
+    for candidate in (
+        _PACKAGE_DIR / "_engine",
+        _PACKAGE_DIR.parents[2],
+        _PACKAGE_DIR.parent,
+        Path.cwd(),
+    ):
         if (candidate / "mojo" / "splot").is_dir():
             return candidate.resolve()
     raise RuntimeError(
-        "Cannot locate Splot Mojo sources. Set SPLOT_HOME to the Splot checkout "
-        "(must contain mojo/splot), or develop from a git tree."
+        "Cannot locate Splot Mojo sources in the installed package or checkout. "
+        "Reinstall the splot wheel or set SPLOT_HOME to a directory containing mojo/splot."
     )
 
 

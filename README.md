@@ -276,12 +276,18 @@ var result = run_round(profile, candidates, SplotState())
 Mojo remains the product engine. An optional in-process host API ships as a
 real Python package (`python/splot`):
 
+Install the wheel with Mojo 1.0.0 on PATH, Git, and network access to download
+EmberJson at first use:
+
 ```bash
-export SPLOT_HOME=/path/to/Splot   # if not developing from the checkout
-# Mojo toolchain on PATH (pixi / Modular)
-uv pip install -e .
-python -c "import splot; print(splot.fuse(profile='examples/fixtures/player_camera_director.profile.toml', candidates=[...]))"
+uv pip install splot
 ```
+
+The wheel includes engine sources under `splot/_engine`; no checkout or
+`SPLOT_HOME` is needed. Pass your own TOML profile path to `fuse`.
+For editable development, run `uv pip install -e .` from the checkout.
+Optionally set `SPLOT_HOME=/path/to/Splot` to use that checkout's engine instead
+of the bundled sources. Both installations compile the binding at first use.
 
 ```python
 import splot
