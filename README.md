@@ -273,8 +273,7 @@ var result = run_round(profile, candidates, SplotState())
 
 ## Thin Python binding (optional)
 
-Mojo remains the product engine. An optional in-process host API ships as a
-real Python package (`python/splot`):
+Run the Python tests from the checkout with `uv run --locked --extra dev pytest`.
 
 Install the wheel with Mojo 1.0.0 on PATH, Git, and network access to download
 EmberJson at first use:
